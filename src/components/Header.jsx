@@ -1,11 +1,13 @@
 import React from 'react';
-import { Search, Plus, Calculator, RefreshCw, Bell, ShieldCheck, UserCheck, Building2 } from 'lucide-react';
+import { Search, Plus, Calculator, RefreshCw, Database, ShieldCheck, Building2 } from 'lucide-react';
+import { isFirebaseConfigured } from '../config/firebase';
 
 export default function Header({
   searchTerm,
   setSearchTerm,
   onOpenNewClient,
   onOpenTaxCalc,
+  onOpenFirebaseModal,
   onResetData,
   activeTab
 }) {
@@ -61,6 +63,22 @@ export default function Header({
 
       {/* Action Controls & Utilities */}
       <div className="flex items-center gap-2 md:gap-3">
+        {/* Firebase DB Config Button */}
+        <button
+          onClick={onOpenFirebaseModal}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            isFirebaseConfigured
+              ? 'bg-amber-500/10 text-amber-300 border-amber-500/40 hover:bg-amber-500/20'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+          }`}
+          title="Firebase Cloud Database Settings"
+        >
+          <Database className={`w-4 h-4 ${isFirebaseConfigured ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span className="hidden sm:inline">
+            {isFirebaseConfigured ? 'Firebase Active' : 'Connect Firebase'}
+          </span>
+        </button>
+
         {/* Tax Calculator Trigger */}
         <button
           onClick={onOpenTaxCalc}

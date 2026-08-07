@@ -12,6 +12,7 @@ import BillingModule from './components/BillingModule';
 import ComplianceCalendar from './components/ComplianceCalendar';
 import TaxCalculatorModal from './components/TaxCalculatorModal';
 import QuickClientModal from './components/QuickClientModal';
+import FirebaseConfigModal from './components/FirebaseConfigModal';
 
 import {
   getClients, saveClients,
@@ -22,6 +23,14 @@ import {
   getInvoices, saveInvoices,
   getStaff, resetAllData
 } from './utils/storage';
+
+import {
+  syncClientsToFirebase, subscribeToClientsFromFirebase,
+  syncGSTWorkToFirebase, subscribeToGSTWorkFromFirebase,
+  syncITWorkToFirebase, subscribeToITWorkFromFirebase,
+  syncTasksToFirebase, subscribeToTasksFromFirebase,
+  syncInvoicesToFirebase, subscribeToInvoicesFromFirebase
+} from './services/firebaseService';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,14 +49,60 @@ export default function App() {
   const [selectedClientDetail, setSelectedClientDetail] = useState(null);
   const [showTaxCalcModal, setShowTaxCalcModal] = useState(false);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
 
-  // Sync to LocalStorage
-  const setClients = (data) => { setClientsState(data); saveClients(data); };
-  const setGstWork = (data) => { setGstWorkState(data); saveGSTWork(data); };
-  const setItWork = (data) => { setItWorkState(data); saveITWork(data); };
-  const setRocWork = (data) => { setRocWorkState(data); saveROCWork(data); };
-  const setTasks = (data) => { setTasksState(data); saveTasks(data); };
-  const setInvoices = (data) => { setInvoicesState(data); saveInvoices(data); };
+  // Subscribe to Firebase Firestore if connected
+  useEffect(() => {
+    const unsubClients = subscribeToClientsFromFirebase((data) => setClientsState(data));
+    const unsubGST = subscribeToGSTWorkFromFirebase((data) => setGstWorkState(data));
+    const unsubIT = subscribeToITWorkFromFirebase((data) => setItWorkState(data));
+    const unsubTasks = subscribeToTasksFromFirebase((data) => setTasksState(data));
+    const unsubInvoices = subscribeToInvoicesFromFirebase((data) => setInvoicesState(data));
+
+    return () => {
+      if (unsubClients) unsubClients();
+      if (unsubGST) unsubGST();
+      if (unsubIT) unsubIT();
+      if (unsubTasks) unsubTasks();
+      if (unsubInvoices) unsubInvoices();
+    };
+  }, []);
+
+  // Sync state helpers
+  const setClients = (data) => {
+    setClientsState(data);
+    saveClients(data);
+    syncClientsToFirebase(data);
+  };
+
+  const setGstWork = (data) => {
+    setGstWorkState(data);
+    saveGSTWork(data);
+    syncGSTWorkToFirebase(data);
+  };
+
+  const setItWork = (data) => {
+    setItWorkState(data);
+    saveITWork(data);
+    syncITWorkToFirebase(data);
+  };
+
+  const setRocWork = (data) => {
+    setRocWorkState(data);
+    saveROCWork(data);
+  };
+
+  const setTasks = (data) => {
+    setTasksState(data);
+    saveTasks(data);
+    syncTasksToFirebase(data);
+  };
+
+  const setInvoices = (data) => {
+    setInvoicesState(data);
+    saveInvoices(data);
+    syncInvoicesToFirebase(data);
+  };
 
   const handleAddClient = (newClient) => {
     setClients([newClient, ...clients]);
@@ -72,6 +127,7 @@ export default function App() {
         setSearchTerm={setSearchTerm}
         onOpenNewClient={() => setShowNewClientModal(true)}
         onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+        onOpenFirebaseModal={() => setShowFirebaseModal(true)}
         onResetData={resetAllData}
         activeTab={activeTab}
       />
@@ -191,6 +247,12 @@ export default function App() {
           onClose={() => setShowNewClientModal(false)}
           onAddClient={handleAddClient}
           staff={staff}
+        />
+      )}
+
+      {showFirebaseModal && (
+        <FirebaseConfigModal
+          onClose={() => setShowFirebaseModal(false)}
         />
       )}
     </div>
