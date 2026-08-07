@@ -1,12 +1,59 @@
 // Comprehensive Mock Data for CA Firm Practice Management
 
-export const INITIAL_STAFF = [
-  { id: 'S1', name: 'CA Rajesh Sharma', role: 'Managing Partner', email: 'rajesh@cadesk.in', mobile: '+91 98230 11223' },
-  { id: 'S2', name: 'CA Ananya Verma', role: 'Audit & Tax Manager', email: 'ananya@cadesk.in', mobile: '+91 97112 44556' },
-  { id: 'S3', name: 'Rohan Gupta', role: 'Senior Article Assistant', email: 'rohan.art@cadesk.in', mobile: '+91 98765 12345' },
-  { id: 'S4', name: 'Priya Nair', role: 'GST Specialist', email: 'priya@cadesk.in', mobile: '+91 99887 66554' },
-  { id: 'S5', name: 'Amit Singh', role: 'Article Trainee', email: 'amit.art@cadesk.in', mobile: '+91 91234 56789' }
+export const INITIAL_USERS = [
+  {
+    id: 'U1',
+    name: 'CA Rajesh Sharma',
+    email: 'rajesh@cadesk.in',
+    role: 'SUPER_ADMIN',
+    status: 'Active',
+    designation: 'Managing Partner',
+    mobile: '+91 98230 11223',
+    allocatedClientIds: ['CL001', 'CL002', 'CL003', 'CL004', 'CL005']
+  },
+  {
+    id: 'U2',
+    name: 'CA Ananya Verma',
+    email: 'ananya@cadesk.in',
+    role: 'ADMIN',
+    status: 'Active',
+    designation: 'Audit & Tax Manager',
+    mobile: '+91 97112 44556',
+    allocatedClientIds: ['CL001', 'CL002', 'CL004']
+  },
+  {
+    id: 'U3',
+    name: 'Rohan Gupta',
+    email: 'rohan.art@cadesk.in',
+    role: 'NORMAL_USER',
+    status: 'Active',
+    designation: 'Senior Article Assistant',
+    mobile: '+91 98765 12345',
+    allocatedClientIds: ['CL003', 'CL002']
+  },
+  {
+    id: 'U4',
+    name: 'Priya Nair',
+    email: 'priya@cadesk.in',
+    role: 'NORMAL_USER',
+    status: 'Active',
+    designation: 'GST Specialist',
+    mobile: '+91 99887 66554',
+    allocatedClientIds: ['CL001', 'CL002']
+  },
+  {
+    id: 'U5',
+    name: 'Amit Singh',
+    email: 'amit.art@cadesk.in',
+    role: 'NORMAL_USER',
+    status: 'Active',
+    designation: 'Article Trainee',
+    mobile: '+91 91234 56789',
+    allocatedClientIds: ['CL005']
+  }
 ];
+
+export const INITIAL_STAFF = INITIAL_USERS;
 
 export const INITIAL_CLIENTS = [
   {
@@ -22,7 +69,7 @@ export const INITIAL_CLIENTS = [
     phone: '+91 98200 55443',
     authorizedPerson: 'Vikram Mehta (Director)',
     address: '402, Pinnacle Business Park, Andheri East, Mumbai, MH - 400069',
-    assignedStaff: 'S2',
+    assignedStaff: 'U2',
     category: 'Corporate',
     turnover: '₹14.5 Cr',
     bankDetails: { bank: 'HDFC Bank', acNo: '50200034112299', ifsc: 'HDFC0000240', branch: 'Andheri East' },
@@ -52,7 +99,7 @@ export const INITIAL_CLIENTS = [
     phone: '+91 94260 88990',
     authorizedPerson: 'Babulal Shah (Partner)',
     address: '12, Ring Road Cloth Market, Surat, GJ - 395002',
-    assignedStaff: 'S4',
+    assignedStaff: 'U4',
     category: 'GST & Tax Audit',
     turnover: '₹4.8 Cr',
     bankDetails: { bank: 'ICICI Bank', acNo: '001205011988', ifsc: 'ICIC0000012', branch: 'Ring Road Surat' },
@@ -80,7 +127,7 @@ export const INITIAL_CLIENTS = [
     phone: '+91 98110 33221',
     authorizedPerson: 'Dr. Ramesh Chandra',
     address: 'B-14, Green Park Main, New Delhi - 110016',
-    assignedStaff: 'S3',
+    assignedStaff: 'U3',
     category: 'Individual ITR',
     turnover: '₹85 Lakhs',
     bankDetails: { bank: 'State Bank of India', acNo: '30998811223', ifsc: 'SBIN0000625', branch: 'Green Park' },
@@ -105,7 +152,7 @@ export const INITIAL_CLIENTS = [
     phone: '+91 98450 66778',
     authorizedPerson: 'Karan Malhotra (Designated Partner)',
     address: '101, Indiranagar 100ft Road, Bengaluru, KA - 560038',
-    assignedStaff: 'S1',
+    assignedStaff: 'U1',
     category: 'Audit & Corporate',
     turnover: '₹22.0 Cr',
     bankDetails: { bank: 'Axis Bank', acNo: '918020055443322', ifsc: 'UTIB0000140', branch: 'Indiranagar' },
@@ -135,7 +182,7 @@ export const INITIAL_CLIENTS = [
     phone: '+91 97690 12121',
     authorizedPerson: 'Anjali Deshmukh (Managing Trustee)',
     address: 'Plot 45, Sector 15, Vashi, Navi Mumbai, MH - 400703',
-    assignedStaff: 'S5',
+    assignedStaff: 'U5',
     category: 'Trust & Exempt Entity',
     turnover: '₹1.2 Cr',
     bankDetails: { bank: 'Bank of Baroda', acNo: '0421010008899', ifsc: 'BARB0VASHIX', branch: 'Vashi Navi Mumbai' },
@@ -149,38 +196,54 @@ export const INITIAL_CLIENTS = [
   }
 ];
 
+export const INITIAL_REMOVED_CLIENTS = [
+  {
+    id: 'CL009-OLD',
+    name: 'Star Logistics & Freight Forwarders',
+    tradeName: 'Star Logistics',
+    constitution: 'Partnership Firm',
+    pan: 'AAAFS4455K',
+    gstin: '27AAAFS4455K1Z8',
+    tan: 'MUMS44332L',
+    email: 'contact@starlogistics.com',
+    removedBy: 'CA Rajesh Sharma',
+    removedDate: '2026-08-01',
+    reason: 'Client closed operations in July 2026'
+  }
+];
+
 export const INITIAL_GST_WORK = [
-  { id: 'GST-101', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', gstin: '27AAACA1234F1Z5', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Draft Prepared', salesTax: 450000, itcAvailable: 320000, netLiability: 130000, assignedTo: 'S4', notes: 'GSTR-2B reconciled with Purchase Register.' },
-  { id: 'GST-102', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', gstin: '27AAACA1234F1Z5', period: 'July 2026', type: 'GSTR-1', dueDate: '2026-08-11', status: 'Filed', salesTax: 450000, itcAvailable: 0, netLiability: 450000, assignedTo: 'S4', notes: 'Filed successfully ARN: AA270726112233G.' },
-  { id: 'GST-103', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', gstin: '24AABFM9876Q1Z9', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Data Received', salesTax: 280000, itcAvailable: 210000, netLiability: 70000, assignedTo: 'S4', notes: 'Waiting for July bank statement for verification.' },
-  { id: 'GST-104', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', gstin: '24AABFM9876Q1Z9', period: 'July 2026', type: 'GSTR-1', dueDate: '2026-08-11', status: 'Data Pending', salesTax: 0, itcAvailable: 0, netLiability: 0, assignedTo: 'S3', notes: 'Client requested 2 days delay for sales register.' },
-  { id: 'GST-105', clientId: 'CL003', clientName: 'Dr. Ramesh Chandra', gstin: '07ABCPC5544R1ZD', period: 'Q1 (Apr-Jun 2026)', type: 'CMP-08 (Composition)', dueDate: '2026-07-18', status: 'Filed', salesTax: 12000, itcAvailable: 0, netLiability: 12000, assignedTo: 'S3', notes: 'Challan paid and CMP-08 filed.' },
-  { id: 'GST-106', clientId: 'CL004', clientName: 'Skyline Builders & Developers LLP', gstin: '29AAAFF7788P1ZK', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Client Approved', salesTax: 890000, itcAvailable: 610000, netLiability: 280000, assignedTo: 'S2', notes: 'OTP requested from Director Karan Malhotra.' },
-  { id: 'GST-107', clientId: 'CL005', clientName: 'GreenEarth Healthcare Foundation', gstin: '27AAATG3322K1Z3', period: 'FY 2025-26', type: 'GSTR-9 (Annual)', dueDate: '2026-12-31', status: 'In Audit', salesTax: 0, itcAvailable: 0, netLiability: 0, assignedTo: 'S1', notes: 'Exempt supply reconciliation under process.' }
+  { id: 'GST-101', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', gstin: '27AAACA1234F1Z5', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Draft Prepared', salesTax: 450000, itcAvailable: 320000, netLiability: 130000, assignedTo: 'U4', notes: 'GSTR-2B reconciled with Purchase Register.' },
+  { id: 'GST-102', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', gstin: '27AAACA1234F1Z5', period: 'July 2026', type: 'GSTR-1', dueDate: '2026-08-11', status: 'Filed', salesTax: 450000, itcAvailable: 0, netLiability: 450000, assignedTo: 'U4', notes: 'Filed successfully ARN: AA270726112233G.' },
+  { id: 'GST-103', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', gstin: '24AABFM9876Q1Z9', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Data Received', salesTax: 280000, itcAvailable: 210000, netLiability: 70000, assignedTo: 'U4', notes: 'Waiting for July bank statement for verification.' },
+  { id: 'GST-104', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', gstin: '24AABFM9876Q1Z9', period: 'July 2026', type: 'GSTR-1', dueDate: '2026-08-11', status: 'Data Pending', salesTax: 0, itcAvailable: 0, netLiability: 0, assignedTo: 'U3', notes: 'Client requested 2 days delay for sales register.' },
+  { id: 'GST-105', clientId: 'CL003', clientName: 'Dr. Ramesh Chandra', gstin: '07ABCPC5544R1ZD', period: 'Q1 (Apr-Jun 2026)', type: 'CMP-08 (Composition)', dueDate: '2026-07-18', status: 'Filed', salesTax: 12000, itcAvailable: 0, netLiability: 12000, assignedTo: 'U3', notes: 'Challan paid and CMP-08 filed.' },
+  { id: 'GST-106', clientId: 'CL004', clientName: 'Skyline Builders & Developers LLP', gstin: '29AAAFF7788P1ZK', period: 'July 2026', type: 'GSTR-3B', dueDate: '2026-08-20', status: 'Client Approved', salesTax: 890000, itcAvailable: 610000, netLiability: 280000, assignedTo: 'U2', notes: 'OTP requested from Director Karan Malhotra.' },
+  { id: 'GST-107', clientId: 'CL005', clientName: 'GreenEarth Healthcare Foundation', gstin: '27AAATG3322K1Z3', period: 'FY 2025-26', type: 'GSTR-9 (Annual)', dueDate: '2026-12-31', status: 'In Audit', salesTax: 0, itcAvailable: 0, netLiability: 0, assignedTo: 'U1', notes: 'Exempt supply reconciliation under process.' }
 ];
 
 export const INITIAL_IT_WORK = [
-  { id: 'IT-201', clientId: 'CL003', clientName: 'Dr. Ramesh Chandra', pan: 'ABCPC5544R', ay: 'AY 2026-27', formType: 'ITR-3 (Business/Profession)', dueDate: '2026-07-31', status: 'Filed', taxableIncome: 2450000, taxDue: 415000, refund: 0, ackNo: '887965412300', assignedTo: 'S3', taxAuditRequired: false },
-  { id: 'IT-202', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'AY 2026-27', formType: 'ITR-6 (Corporate)', dueDate: '2026-10-31', status: 'Draft Prepared', taxableIncome: 18500000, taxDue: 4625000, refund: 0, ackNo: '-', assignedTo: 'S2', taxAuditRequired: true },
-  { id: 'IT-203', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'AY 2026-27', formType: 'Form 3CA/3CD (Tax Audit)', dueDate: '2026-09-30', status: 'In Audit', taxableIncome: 0, taxDue: 0, refund: 0, ackNo: '-', assignedTo: 'S1', taxAuditRequired: true },
-  { id: 'IT-204', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', pan: 'AABFM9876Q', ay: 'AY 2026-27', formType: 'Form 3CB/3CD (Tax Audit)', dueDate: '2026-09-30', status: 'Data Received', taxableIncome: 4200000, taxDue: 1260000, refund: 0, ackNo: '-', assignedTo: 'S2', taxAuditRequired: true },
-  { id: 'IT-205', clientId: 'CL004', clientName: 'Skyline Builders & Developers LLP', pan: 'AAAFF7788P', ay: 'AY 2026-27', formType: 'ITR-5 (LLP)', dueDate: '2026-10-31', status: 'Data Pending', taxableIncome: 28000000, taxDue: 8400000, refund: 0, ackNo: '-', assignedTo: 'S2', taxAuditRequired: true },
-  { id: 'IT-206', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'Q1 (Apr-Jun 2026)', formType: 'TDS 26Q (Non-Salary)', dueDate: '2026-07-31', status: 'Filed', taxableIncome: 1200000, taxDue: 120000, refund: 0, ackNo: 'TDS-26Q-99881', assignedTo: 'S4', taxAuditRequired: false }
+  { id: 'IT-201', clientId: 'CL003', clientName: 'Dr. Ramesh Chandra', pan: 'ABCPC5544R', ay: 'AY 2026-27', formType: 'ITR-3 (Business/Profession)', dueDate: '2026-07-31', status: 'Filed', taxableIncome: 2450000, taxDue: 415000, refund: 0, ackNo: '887965412300', assignedTo: 'U3', taxAuditRequired: false },
+  { id: 'IT-202', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'AY 2026-27', formType: 'ITR-6 (Corporate)', dueDate: '2026-10-31', status: 'Draft Prepared', taxableIncome: 18500000, taxDue: 4625000, refund: 0, ackNo: '-', assignedTo: 'U2', taxAuditRequired: true },
+  { id: 'IT-203', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'AY 2026-27', formType: 'Form 3CA/3CD (Tax Audit)', dueDate: '2026-09-30', status: 'In Audit', taxableIncome: 0, taxDue: 0, refund: 0, ackNo: '-', assignedTo: 'U1', taxAuditRequired: true },
+  { id: 'IT-204', clientId: 'CL002', clientName: 'Mahavir Textiles & Traders', pan: 'AABFM9876Q', ay: 'AY 2026-27', formType: 'Form 3CB/3CD (Tax Audit)', dueDate: '2026-09-30', status: 'Data Received', taxableIncome: 4200000, taxDue: 1260000, refund: 0, ackNo: '-', assignedTo: 'U2', taxAuditRequired: true },
+  { id: 'IT-205', clientId: 'CL004', clientName: 'Skyline Builders & Developers LLP', pan: 'AAAFF7788P', ay: 'AY 2026-27', formType: 'ITR-5 (LLP)', dueDate: '2026-10-31', status: 'Data Pending', taxableIncome: 28000000, taxDue: 8400000, refund: 0, ackNo: '-', assignedTo: 'U2', taxAuditRequired: true },
+  { id: 'IT-206', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', pan: 'AAACA1234F', ay: 'Q1 (Apr-Jun 2026)', formType: 'TDS 26Q (Non-Salary)', dueDate: '2026-07-31', status: 'Filed', taxableIncome: 1200000, taxDue: 120000, refund: 0, ackNo: 'TDS-26Q-99881', assignedTo: 'U4', taxAuditRequired: false }
 ];
 
 export const INITIAL_ROC_WORK = [
-  { id: 'ROC-301', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'DIR-3 KYC', category: 'Director KYC', dueDate: '2026-09-30', status: 'Completed', assignedTo: 'S3', notes: 'Completed for both directors Vikram Mehta and Sunita Mehta.' },
-  { id: 'ROC-302', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'AOC-4 (Financial Statements)', category: 'Annual Filing', dueDate: '2026-10-30', status: 'In Progress', assignedTo: 'S2', notes: 'Awaiting balance sheet signoff.' },
-  { id: 'ROC-303', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'MGT-7 (Annual Return)', category: 'Annual Filing', dueDate: '2026-11-29', status: 'Pending', assignedTo: 'S2', notes: 'To be filed post AGM.' },
-  { id: 'ROC-304', clientId: 'CL004', clientName: 'Skyline Builders LLP', formName: 'Form 11 (Annual Return LLP)', category: 'LLP Annual', dueDate: '2026-05-30', status: 'Completed', assignedTo: 'S1', notes: 'Filed with SRN R88771122.' }
+  { id: 'ROC-301', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'DIR-3 KYC', category: 'Director KYC', dueDate: '2026-09-30', status: 'Completed', assignedTo: 'U3', notes: 'Completed for both directors Vikram Mehta and Sunita Mehta.' },
+  { id: 'ROC-302', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'AOC-4 (Financial Statements)', category: 'Annual Filing', dueDate: '2026-10-30', status: 'In Progress', assignedTo: 'U2', notes: 'Awaiting balance sheet signoff.' },
+  { id: 'ROC-303', clientId: 'CL001', clientName: 'Apex Infotech Pvt Ltd', formName: 'MGT-7 (Annual Return)', category: 'Annual Filing', dueDate: '2026-11-29', status: 'Pending', assignedTo: 'U2', notes: 'To be filed post AGM.' },
+  { id: 'ROC-304', clientId: 'CL004', clientName: 'Skyline Builders LLP', formName: 'Form 11 (Annual Return LLP)', category: 'LLP Annual', dueDate: '2026-05-30', status: 'Completed', assignedTo: 'U1', notes: 'Filed with SRN R88771122.' }
 ];
 
 export const INITIAL_TASKS = [
-  { id: 'TSK-501', title: 'Prepare GSTR-3B for July 2026', clientId: 'CL001', clientName: 'Apex Infotech', category: 'GST', assignedTo: 'S4', priority: 'High', dueDate: '2026-08-18', status: 'In Progress', description: 'Reconcile Purchase Register with GSTR-2B before draft generation.' },
-  { id: 'TSK-502', title: 'Form 3CD Annexure Clause 21(a) Verification', clientId: 'CL002', clientName: 'Mahavir Textiles', category: 'Tax Audit', assignedTo: 'S3', priority: 'Urgent', dueDate: '2026-08-25', status: 'To Do', description: 'Verify inadmissable personal expenses & disallowance u/s 40A(3).' },
-  { id: 'TSK-503', title: 'Q2 Advance Tax Calculation & Challan', clientId: 'CL004', clientName: 'Skyline Builders LLP', category: 'Income Tax', assignedTo: 'S2', priority: 'Medium', dueDate: '2026-09-10', status: 'To Do', description: 'Estimate Q2 profit and calculate 45% cumulative advance tax liability due 15th Sept.' },
-  { id: 'TSK-504', title: 'DIR-3 KYC Mobile & Email OTP Verification', clientId: 'CL004', clientName: 'Skyline Builders LLP', category: 'ROC', assignedTo: 'S5', priority: 'Low', dueDate: '2026-09-20', status: 'To Do', description: 'Coordinate with Karan Malhotra for OTP validation.' },
-  { id: 'TSK-505', title: 'Statutory Audit Inventory Stock Count Report', clientId: 'CL002', clientName: 'Mahavir Textiles', category: 'Audit', assignedTo: 'S3', priority: 'High', dueDate: '2026-08-15', status: 'Review', description: 'Review warehouse physical stock audit report vs ledger balance.' }
+  { id: 'TSK-501', title: 'Prepare GSTR-3B for July 2026', clientId: 'CL001', clientName: 'Apex Infotech', category: 'GST', assignedTo: 'U4', assignedToName: 'Priya Nair', priority: 'High', dueDate: '2026-08-18', status: 'In Progress', description: 'Reconcile Purchase Register with GSTR-2B before draft generation.' },
+  { id: 'TSK-502', title: 'Form 3CD Annexure Clause 21(a) Verification', clientId: 'CL002', clientName: 'Mahavir Textiles', category: 'Tax Audit', assignedTo: 'U3', assignedToName: 'Rohan Gupta', priority: 'Urgent', dueDate: '2026-08-25', status: 'To Do', description: 'Verify inadmissable personal expenses & disallowance u/s 40A(3).' },
+  { id: 'TSK-503', title: 'Q2 Advance Tax Calculation & Challan', clientId: 'CL004', clientName: 'Skyline Builders LLP', category: 'Income Tax', assignedTo: 'U2', assignedToName: 'CA Ananya Verma', priority: 'Medium', dueDate: '2026-09-10', status: 'To Do', description: 'Estimate Q2 profit and calculate 45% cumulative advance tax liability due 15th Sept.' },
+  { id: 'TSK-504', title: 'DIR-3 KYC Mobile & Email OTP Verification', clientId: 'CL004', clientName: 'Skyline Builders LLP', category: 'ROC', assignedTo: 'U5', assignedToName: 'Amit Singh', priority: 'Low', dueDate: '2026-09-20', status: 'To Do', description: 'Coordinate with Karan Malhotra for OTP validation.' },
+  { id: 'TSK-505', title: 'Statutory Audit Inventory Stock Count Report', clientId: 'CL002', clientName: 'Mahavir Textiles', category: 'Audit', assignedTo: 'U3', assignedToName: 'Rohan Gupta', priority: 'High', dueDate: '2026-08-15', status: 'Review', description: 'Review warehouse physical stock audit report vs ledger balance.' }
 ];
 
 export const INITIAL_INVOICES = [

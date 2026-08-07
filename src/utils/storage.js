@@ -5,17 +5,20 @@ import {
   INITIAL_ROC_WORK,
   INITIAL_TASKS,
   INITIAL_INVOICES,
-  INITIAL_STAFF
+  INITIAL_USERS,
+  INITIAL_REMOVED_CLIENTS
 } from '../data/mockData';
 
 const KEYS = {
   CLIENTS: 'digica_clients',
+  REMOVED_CLIENTS: 'digica_removed_clients',
   GST: 'digica_gst_work',
   IT: 'digica_it_work',
   ROC: 'digica_roc_work',
   TASKS: 'digica_tasks',
   INVOICES: 'digica_invoices',
-  STAFF: 'digica_staff'
+  USERS: 'digica_users',
+  CURRENT_USER: 'digica_current_user'
 };
 
 const getItem = (key, initialValue) => {
@@ -43,6 +46,9 @@ const setItem = (key, value) => {
 export const getClients = () => getItem(KEYS.CLIENTS, INITIAL_CLIENTS);
 export const saveClients = (data) => setItem(KEYS.CLIENTS, data);
 
+export const getRemovedClients = () => getItem(KEYS.REMOVED_CLIENTS, INITIAL_REMOVED_CLIENTS);
+export const saveRemovedClients = (data) => setItem(KEYS.REMOVED_CLIENTS, data);
+
 export const getGSTWork = () => getItem(KEYS.GST, INITIAL_GST_WORK);
 export const saveGSTWork = (data) => setItem(KEYS.GST, data);
 
@@ -58,15 +64,21 @@ export const saveTasks = (data) => setItem(KEYS.TASKS, data);
 export const getInvoices = () => getItem(KEYS.INVOICES, INITIAL_INVOICES);
 export const saveInvoices = (data) => setItem(KEYS.INVOICES, data);
 
-export const getStaff = () => getItem(KEYS.STAFF, INITIAL_STAFF);
+export const getUsers = () => getItem(KEYS.USERS, INITIAL_USERS);
+export const saveUsers = (data) => setItem(KEYS.USERS, data);
+
+export const getCurrentUser = () => getItem(KEYS.CURRENT_USER, INITIAL_USERS[0]); // Default Super Admin
+export const saveCurrentUser = (user) => setItem(KEYS.CURRENT_USER, user);
 
 export const resetAllData = () => {
   localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
+  localStorage.setItem(KEYS.REMOVED_CLIENTS, JSON.stringify(INITIAL_REMOVED_CLIENTS));
   localStorage.setItem(KEYS.GST, JSON.stringify(INITIAL_GST_WORK));
   localStorage.setItem(KEYS.IT, JSON.stringify(INITIAL_IT_WORK));
   localStorage.setItem(KEYS.ROC, JSON.stringify(INITIAL_ROC_WORK));
   localStorage.setItem(KEYS.TASKS, JSON.stringify(INITIAL_TASKS));
   localStorage.setItem(KEYS.INVOICES, JSON.stringify(INITIAL_INVOICES));
-  localStorage.setItem(KEYS.STAFF, JSON.stringify(INITIAL_STAFF));
+  localStorage.setItem(KEYS.USERS, JSON.stringify(INITIAL_USERS));
+  localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
   window.location.reload();
 };

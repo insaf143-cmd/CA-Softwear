@@ -7,28 +7,33 @@ import {
   AlertCircle,
   CheckCircle2,
   Calendar,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 
-export default function TaskManager({ tasks, setTasks, clients, staff }) {
+export default function TaskManager({ tasks, setTasks, clients, staff, currentUser }) {
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
     clientId: clients[0]?.id || '',
     category: 'GST',
-    assignedTo: staff[2]?.id || 'S3',
+    assignedTo: staff[2]?.id || 'U3',
     priority: 'High',
     dueDate: '2026-08-25',
     description: ''
   });
 
+  const canCreateOrAssign = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
+
   const handleCreateTask = (e) => {
     e.preventDefault();
     const client = clients.find((c) => c.id === newTask.clientId);
+    const assignee = staff.find((s) => s.id === newTask.assignedTo);
     const created = {
       ...newTask,
       id: `TSK-${Date.now()}`,
       clientName: client ? client.name : 'General Work',
+      assignedToName: assignee ? assignee.name : 'Staff Member',
       status: 'To Do'
     };
     setTasks([created, ...tasks]);
@@ -37,7 +42,7 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
       title: '',
       clientId: clients[0]?.id || '',
       category: 'GST',
-      assignedTo: staff[2]?.id || 'S3',
+      assignedTo: staff[2]?.id || 'U3',
       priority: 'High',
       dueDate: '2026-08-25',
       description: ''
@@ -46,6 +51,16 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
 
   const handleStatusChange = (taskId, newStatus) => {
     setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+  };
+
+  const handleToggleTaskCompletion = (taskId) => {
+    setTasks(tasks.map((t) => {
+      if (t.id === taskId) {
+        const nextStatus = t.status === 'Completed' ? 'In Progress' : 'Completed';
+        return { ...t, status: nextStatus };
+      }
+      return t;
+    }));
   };
 
   const columns = ['To Do', 'In Progress', 'Review', 'Completed'];
@@ -57,20 +72,24 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <CheckSquare className="w-6 h-6 text-emerald-400" />
-            Article Trainee & Staff Work Delegation Board
+            {currentUser.role === 'NORMAL_USER' ? 'My Allocated Tasks & Work Control' : 'Staff Work Allocation & Task Delegation'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Assign statutory audit tasks, GST returns, and IT return work to firm assistants with priorities and deadlines.
+            {currentUser.role === 'NORMAL_USER'
+              ? 'View tasks allocated to you. Mark task complete when finished or reverse if needed.'
+              : 'Assign statutory tasks to article assistants, mark due dates, and monitor real-time completion.'}
           </p>
         </div>
 
-        <button
-          onClick={() => setShowNewTaskModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-950/50 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Delegate New Task</span>
-        </button>
+        {canCreateOrAssign && (
+          <button
+            onClick={() => setShowNewTaskModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-950/50 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Delegate New Task</span>
+          </button>
+        )}
       </div>
 
       {/* Kanban Board Layout */}
@@ -122,18 +141,35 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
                       </span>
                     </div>
 
-                    {/* Move Column Selector */}
+                    {/* Action Controls & Reversal Button */}
                     <div className="pt-2 flex items-center justify-between gap-1 text-[11px]">
-                      <span className="text-emerald-400 font-semibold font-mono">Assigned: {t.assignedTo}</span>
-                      <select
-                        value={t.status}
-                        onChange={(e) => handleStatusChange(t.id, e.target.value)}
-                        className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-300 focus:outline-none cursor-pointer"
-                      >
-                        {columns.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
+                      <span className="text-emerald-400 font-semibold font-mono truncate max-w-[110px]">
+                        Assigned: {t.assignedToName || t.assignedTo}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleTaskCompletion(t.id)}
+                          className={`px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition ${
+                            t.status === 'Completed'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                          }`}
+                          title={t.status === 'Completed' ? 'Reverse Task back to In Progress' : 'Mark Task Completed'}
+                        >
+                          {t.status === 'Completed' ? (
+                            <>
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Reverse</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Complete</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -150,7 +186,7 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <CheckSquare className="w-5 h-5 text-emerald-400" />
-                Delegate Task to Article / Staff
+                Delegate Task & Set Completion Date
               </h3>
               <button onClick={() => setShowNewTaskModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -202,14 +238,14 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Assignee</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Assign User</label>
                   <select
                     value={newTask.assignedTo}
                     onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
                   >
                     {staff.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.name} ({s.designation})</option>
                     ))}
                   </select>
                 </div>
@@ -229,7 +265,7 @@ export default function TaskManager({ tasks, setTasks, clients, staff }) {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Due Date</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Completion Due Date</label>
                   <input
                     type="date"
                     required

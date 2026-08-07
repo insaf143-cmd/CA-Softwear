@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Calculator, RefreshCw, Database, ShieldCheck, Building2 } from 'lucide-react';
+import { Search, Plus, Calculator, RefreshCw, Database, ShieldCheck, Building2, UserCheck, ChevronDown } from 'lucide-react';
 import { isFirebaseConfigured } from '../config/firebase';
 
 export default function Header({
@@ -9,6 +9,9 @@ export default function Header({
   onOpenTaxCalc,
   onOpenFirebaseModal,
   onResetData,
+  users,
+  currentUser,
+  onSwitchUser,
   activeTab
 }) {
   const currentDate = new Date().toLocaleDateString('en-IN', {
@@ -61,8 +64,27 @@ export default function Header({
         </div>
       </div>
 
-      {/* Action Controls & Utilities */}
+      {/* Action Controls & User Role Switcher */}
       <div className="flex items-center gap-2 md:gap-3">
+        {/* User Role Switcher */}
+        <div className="relative flex items-center bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1 text-xs">
+          <UserCheck className="w-3.5 h-3.5 text-emerald-400 mr-1.5 shrink-0" />
+          <select
+            value={currentUser.id}
+            onChange={(e) => {
+              const selected = users.find(u => u.id === e.target.value);
+              if (selected) onSwitchUser(selected);
+            }}
+            className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer text-xs pr-1"
+          >
+            {users.map((u) => (
+              <option key={u.id} value={u.id} className="bg-slate-900 text-slate-200">
+                {u.name} ({u.role === 'SUPER_ADMIN' ? 'Super Admin' : u.role === 'ADMIN' ? 'Admin' : 'Normal User'})
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Firebase DB Config Button */}
         <button
           onClick={onOpenFirebaseModal}
@@ -74,8 +96,8 @@ export default function Header({
           title="Firebase Cloud Database Settings"
         >
           <Database className={`w-4 h-4 ${isFirebaseConfigured ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span className="hidden sm:inline">
-            {isFirebaseConfigured ? 'Firebase Active' : 'Connect Firebase'}
+          <span className="hidden xl:inline">
+            {isFirebaseConfigured ? 'Firebase Active' : 'Connect DB'}
           </span>
         </button>
 
@@ -89,20 +111,16 @@ export default function Header({
           <span className="hidden lg:inline">Tax Calc</span>
         </button>
 
-        {/* Add Client Button */}
-        <button
-          onClick={onOpenNewClient}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Client</span>
-        </button>
-
-        {/* Today's Date Badge */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/60 border border-slate-700 text-[11px] text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>{currentDate}</span>
-        </div>
+        {/* Add Client Button (Only for Admin / Super Admin) */}
+        {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
+          <button
+            onClick={onOpenNewClient}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Client</span>
+          </button>
+        )}
 
         {/* Reset Demo Data Button */}
         <button

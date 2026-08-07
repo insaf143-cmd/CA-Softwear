@@ -19,9 +19,12 @@ export default function ClientManagement({
   setSearchTerm,
   onOpenClientDetail,
   onOpenNewClient,
-  onDeleteClient
+  onDeleteClient,
+  currentUser
 }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const canAddOrDelete = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
 
   const filteredClients = clients.filter((c) => {
     const matchesSearch =
@@ -44,20 +47,24 @@ export default function ClientManagement({
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Users className="w-6 h-6 text-emerald-400" />
-            Client 360° Directory & Vault
+            {currentUser.role === 'NORMAL_USER' ? 'My Allocated Client Files' : 'Client 360° Directory & Vault'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Centralized database of Indian tax entities, login credentials, GSTINs, PANs, and directors.
+            {currentUser.role === 'NORMAL_USER'
+              ? 'Files allocated to you by your CA Admin.'
+              : 'Centralized database of Indian tax entities, login credentials, GSTINs, PANs, and directors.'}
           </p>
         </div>
 
-        <button
-          onClick={onOpenNewClient}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-950/50 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Register New Client</span>
-        </button>
+        {canAddOrDelete && (
+          <button
+            onClick={onOpenNewClient}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-950/50 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Register New Client</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -110,7 +117,7 @@ export default function ClientManagement({
             {filteredClients.length === 0 ? (
               <tr>
                 <td colSpan="7" className="text-center py-8 text-slate-400 text-xs">
-                  No client records found matching "{searchTerm}".
+                  No client records found matching filter/allocation rules.
                 </td>
               </tr>
             ) : (
@@ -157,17 +164,20 @@ export default function ClientManagement({
                         <span>360 Card</span>
                       </button>
 
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Delete client ${client.name}?`)) {
-                            onDeleteClient(client.id);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition"
-                        title="Delete Client"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canAddOrDelete && (
+                        <button
+                          onClick={() => {
+                            const reason = window.prompt(`Remove client "${client.name}" to archive list? Enter reason:`, 'Client requested closure');
+                            if (reason !== null) {
+                              onDeleteClient(client.id, reason);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition"
+                          title="Remove Client to Archive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -13,15 +13,21 @@ import ComplianceCalendar from './components/ComplianceCalendar';
 import TaxCalculatorModal from './components/TaxCalculatorModal';
 import QuickClientModal from './components/QuickClientModal';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
+import UserManagement from './components/UserManagement';
+import ClientRemovalTab from './components/ClientRemovalTab';
+import ReportsModule from './components/ReportsModule';
 
 import {
   getClients, saveClients,
+  getRemovedClients, saveRemovedClients,
   getGSTWork, saveGSTWork,
   getITWork, saveITWork,
   getROCWork, saveROCWork,
   getTasks, saveTasks,
   getInvoices, saveInvoices,
-  getStaff, resetAllData
+  getUsers, saveUsers,
+  getCurrentUser, saveCurrentUser,
+  resetAllData
 } from './utils/storage';
 
 import {
@@ -36,20 +42,35 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Local Storage States
+  // Storage & RBAC States
+  const [users, setUsersState] = useState(getUsers);
+  const [currentUser, setCurrentUserState] = useState(getCurrentUser);
+
   const [clients, setClientsState] = useState(getClients);
+  const [removedClients, setRemovedClientsState] = useState(getRemovedClients);
   const [gstWork, setGstWorkState] = useState(getGSTWork);
   const [itWork, setItWorkState] = useState(getITWork);
   const [rocWork, setRocWorkState] = useState(getROCWork);
   const [tasks, setTasksState] = useState(getTasks);
   const [invoices, setInvoicesState] = useState(getInvoices);
-  const [staff] = useState(getStaff);
 
   // Modals State
   const [selectedClientDetail, setSelectedClientDetail] = useState(null);
   const [showTaxCalcModal, setShowTaxCalcModal] = useState(false);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+
+  // Sync to Storage
+  const setUsers = (data) => { setUsersState(data); saveUsers(data); };
+  const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
+
+  const setClients = (data) => { setClientsState(data); saveClients(data); syncClientsToFirebase(data); };
+  const setRemovedClients = (data) => { setRemovedClientsState(data); saveRemovedClients(data); };
+  const setGstWork = (data) => { setGstWorkState(data); saveGSTWork(data); syncGSTWorkToFirebase(data); };
+  const setItWork = (data) => { setItWorkState(data); saveITWork(data); syncITWorkToFirebase(data); };
+  const setRocWork = (data) => { setRocWorkState(data); saveROCWork(data); };
+  const setTasks = (data) => { setTasksState(data); saveTasks(data); syncTasksToFirebase(data); };
+  const setInvoices = (data) => { setInvoicesState(data); saveInvoices(data); syncInvoicesToFirebase(data); };
 
   // Subscribe to Firebase Firestore if connected
   useEffect(() => {
@@ -68,55 +89,68 @@ export default function App() {
     };
   }, []);
 
-  // Sync state helpers
-  const setClients = (data) => {
-    setClientsState(data);
-    saveClients(data);
-    syncClientsToFirebase(data);
-  };
+  // Filter Data based on Role & Allocation
+  const isNormalUser = currentUser.role === 'NORMAL_USER';
 
-  const setGstWork = (data) => {
-    setGstWorkState(data);
-    saveGSTWork(data);
-    syncGSTWorkToFirebase(data);
-  };
+  const visibleClients = isNormalUser
+    ? clients.filter(c => c.assignedStaff === currentUser.id || (currentUser.allocatedClientIds && currentUser.allocatedClientIds.includes(c.id)))
+    : clients;
 
-  const setItWork = (data) => {
-    setItWorkState(data);
-    saveITWork(data);
-    syncITWorkToFirebase(data);
-  };
+  const visibleTasks = isNormalUser
+    ? tasks.filter(t => t.assignedTo === currentUser.id || t.assignedToName === currentUser.name)
+    : tasks;
 
-  const setRocWork = (data) => {
-    setRocWorkState(data);
-    saveROCWork(data);
-  };
+  const visibleGstWork = isNormalUser
+    ? gstWork.filter(g => visibleClients.some(c => c.id === g.clientId))
+    : gstWork;
 
-  const setTasks = (data) => {
-    setTasksState(data);
-    saveTasks(data);
-    syncTasksToFirebase(data);
-  };
-
-  const setInvoices = (data) => {
-    setInvoicesState(data);
-    saveInvoices(data);
-    syncInvoicesToFirebase(data);
-  };
+  const visibleItWork = isNormalUser
+    ? itWork.filter(i => visibleClients.some(c => c.id === i.clientId))
+    : itWork;
 
   const handleAddClient = (newClient) => {
     setClients([newClient, ...clients]);
   };
 
-  const handleDeleteClient = (clientId) => {
+  const handleRemoveClient = (clientId, reason) => {
+    const target = clients.find(c => c.id === clientId);
+    if (!target) return;
+
+    const removedItem = {
+      ...target,
+      reason: reason || 'Client requested removal',
+      removedBy: currentUser.name,
+      removedDate: new Date().toISOString().split('T')[0]
+    };
+
     setClients(clients.filter(c => c.id !== clientId));
+    setRemovedClients([removedItem, ...removedClients]);
+  };
+
+  const handleRestoreClient = (clientId) => {
+    const target = removedClients.find(r => r.id === clientId);
+    if (!target) return;
+
+    const restored = { ...target };
+    delete restored.reason;
+    delete restored.removedBy;
+    delete restored.removedDate;
+
+    setRemovedClients(removedClients.filter(r => r.id !== clientId));
+    setClients([restored, ...clients]);
+  };
+
+  const handlePermanentDeleteClient = (clientId) => {
+    setRemovedClients(removedClients.filter(r => r.id !== clientId));
   };
 
   const counts = {
-    clients: clients.length,
-    pendingGst: gstWork.filter(g => g.status !== 'Filed').length,
-    pendingIt: itWork.filter(i => i.status !== 'Filed' && i.status !== 'Completed').length,
-    openTasks: tasks.filter(t => t.status !== 'Completed').length
+    clients: visibleClients.length,
+    pendingGst: visibleGstWork.filter(g => g.status !== 'Filed').length,
+    pendingIt: visibleItWork.filter(i => i.status !== 'Filed' && i.status !== 'Completed').length,
+    openTasks: visibleTasks.filter(t => t.status !== 'Completed').length,
+    usersCount: users.length,
+    removedCount: removedClients.length
   };
 
   return (
@@ -129,6 +163,9 @@ export default function App() {
         onOpenTaxCalc={() => setShowTaxCalcModal(true)}
         onOpenFirebaseModal={() => setShowFirebaseModal(true)}
         onResetData={resetAllData}
+        users={users}
+        currentUser={currentUser}
+        onSwitchUser={handleSwitchUser}
         activeTab={activeTab}
       />
 
@@ -139,11 +176,12 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           counts={counts}
+          currentUser={currentUser}
         />
 
         {/* Mobile Navigation Pills */}
         <div className="md:hidden flex overflow-x-auto bg-slate-900 border-b border-slate-800 p-2 gap-2 fixed bottom-0 left-0 right-0 z-40">
-          {['dashboard', 'clients', 'gst', 'it', 'roc', 'tasks', 'billing', 'calendar'].map((tab) => (
+          {['dashboard', 'clients', 'gst', 'it', 'tasks', 'calendar', 'users', 'removal', 'reports'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -160,10 +198,10 @@ export default function App() {
         <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full pb-20 md:pb-6">
           {activeTab === 'dashboard' && (
             <Dashboard
-              clients={clients}
-              gstWork={gstWork}
-              itWork={itWork}
-              tasks={tasks}
+              clients={visibleClients}
+              gstWork={visibleGstWork}
+              itWork={visibleItWork}
+              tasks={visibleTasks}
               invoices={invoices}
               setActiveTab={setActiveTab}
               onOpenNewClient={() => setShowNewClientModal(true)}
@@ -173,26 +211,27 @@ export default function App() {
 
           {activeTab === 'clients' && (
             <ClientManagement
-              clients={clients}
+              clients={visibleClients}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               onOpenClientDetail={(client) => setSelectedClientDetail(client)}
               onOpenNewClient={() => setShowNewClientModal(true)}
-              onDeleteClient={handleDeleteClient}
+              onDeleteClient={handleRemoveClient}
+              currentUser={currentUser}
             />
           )}
 
           {activeTab === 'gst' && (
             <GSTModule
-              gstWork={gstWork}
+              gstWork={visibleGstWork}
               setGstWork={setGstWork}
-              clients={clients}
+              clients={visibleClients}
             />
           )}
 
           {activeTab === 'it' && (
             <ITModule
-              itWork={itWork}
+              itWork={visibleItWork}
               setItWork={setItWork}
               onOpenTaxCalc={() => setShowTaxCalcModal(true)}
             />
@@ -207,10 +246,11 @@ export default function App() {
 
           {activeTab === 'tasks' && (
             <TaskManager
-              tasks={tasks}
+              tasks={visibleTasks}
               setTasks={setTasks}
-              clients={clients}
-              staff={staff}
+              clients={visibleClients}
+              staff={users}
+              currentUser={currentUser}
             />
           )}
 
@@ -218,12 +258,41 @@ export default function App() {
             <BillingModule
               invoices={invoices}
               setInvoices={setInvoices}
-              clients={clients}
+              clients={visibleClients}
             />
           )}
 
           {activeTab === 'calendar' && (
             <ComplianceCalendar />
+          )}
+
+          {activeTab === 'users' && (
+            <UserManagement
+              users={users}
+              setUsers={setUsers}
+              currentUser={currentUser}
+              clients={clients}
+            />
+          )}
+
+          {activeTab === 'removal' && (
+            <ClientRemovalTab
+              removedClients={removedClients}
+              onRestoreClient={handleRestoreClient}
+              onPermanentDeleteClient={handlePermanentDeleteClient}
+              currentUser={currentUser}
+            />
+          )}
+
+          {activeTab === 'reports' && (
+            <ReportsModule
+              users={users}
+              tasks={tasks}
+              gstWork={gstWork}
+              itWork={itWork}
+              rocWork={rocWork}
+              clients={clients}
+            />
           )}
         </main>
       </div>
@@ -246,7 +315,7 @@ export default function App() {
         <QuickClientModal
           onClose={() => setShowNewClientModal(false)}
           onAddClient={handleAddClient}
-          staff={staff}
+          staff={users}
         />
       )}
 
