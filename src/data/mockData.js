@@ -452,3 +452,70 @@ export const COMPLIANCE_DEADLINES = [
   { date: '2026-09-30', title: 'DIR-3 KYC Annual filing', detail: 'Filing of DIR-3 KYC for all active Director Identification Numbers.', priority: 'High', authority: 'MCA / ROC' },
   { date: '2026-10-31', title: 'Corporate & Audit ITR Filing', detail: 'Filing of Income Tax Return for Tax Audit cases and Corporate Entities.', priority: 'Critical', authority: 'Income Tax' }
 ];
+
+export const INITIAL_INWARD_OUTWARD = [
+  {
+    id: 'INW-2026-001',
+    type: 'Inward',
+    date: '2026-08-01',
+    time: '11:30 AM',
+    clientId: 'CL001',
+    clientName: 'Apex Infotech Private Limited',
+    category: 'Books & Registers',
+    description: 'Physical General Ledger, Cash Book, and Purchase Invoices Box (FY 2025-26)',
+    quantity: '2 Box Files & 1 Pen Drive',
+    handedBy: 'Mr. Deepak Verma (Accounts Manager, Apex)',
+    handedByPhone: '+91 98220 33445',
+    receivedBy: 'Rohan Gupta (Article Assistant)',
+    rackLocation: 'Rack A-2 / Shelf 3',
+    status: 'In Custody',
+    remarks: 'Original tax invoices with bank statements for Q1 & Q2',
+    outwardDetails: null
+  },
+  {
+    id: 'INW-2026-002',
+    type: 'Inward',
+    date: '2026-08-03',
+    time: '03:15 PM',
+    clientId: 'CL002',
+    clientName: 'Mahavir Textiles & Traders',
+    category: 'DSC Token',
+    description: 'Class 3 Digital Signature Certificate (ePass2003) of Proprietor Shri Mahavir Jain',
+    quantity: '1 USB Token with PIN envelope',
+    handedBy: 'Shri Mahavir Jain',
+    handedByPhone: '+91 98210 55667',
+    receivedBy: 'Priya Nair (GST Specialist)',
+    rackLocation: 'Vault Locker 1 / Safe',
+    status: 'Returned',
+    remarks: 'Needed for GST Portal login and revocation verification',
+    outwardDetails: {
+      outwardId: 'OUT-2026-001',
+      date: '2026-08-06',
+      time: '04:45 PM',
+      mode: 'Hand Delivery',
+      courierDetails: '-',
+      dispatchedBy: 'Priya Nair',
+      receivedByClient: 'Shri Mahavir Jain (In Person)',
+      clientPhone: '+91 98210 55667',
+      acknowledgmentRemarks: 'DSC token tested and returned safely in sealed envelope'
+    }
+  },
+  {
+    id: 'INW-2026-003',
+    type: 'Inward',
+    date: '2026-08-05',
+    time: '12:00 PM',
+    clientId: 'CL004',
+    clientName: 'Skyline Builders & Developers LLP',
+    category: 'Property & Title Deeds',
+    description: 'Original Project Joint Venture Agreement & RERA sanction copies',
+    quantity: '1 Sealed Envelope (52 Pages)',
+    handedBy: 'Courier (Blue Dart Waybill #88291039)',
+    handedByPhone: '022-26543210',
+    receivedBy: 'CA Ananya Verma',
+    rackLocation: 'Partner Chamber Cabinet C',
+    status: 'In Custody',
+    remarks: 'For MCA Form 8 charge creation and title verification',
+    outwardDetails: null
+  }
+];

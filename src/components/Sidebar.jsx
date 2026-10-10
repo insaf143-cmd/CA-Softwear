@@ -13,7 +13,8 @@ import {
   UserCheck,
   Trash2,
   BarChart3,
-  FolderArchive
+  FolderArchive,
+  FolderInput
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }) {
@@ -60,6 +61,14 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }
       icon: FolderArchive,
       badge: counts.evidenceCount ? `${counts.evidenceCount} Files` : 'Vault',
       badgeColor: 'bg-cyan-500/20 text-cyan-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'inwardOutward',
+      label: 'Inward / Outward Register',
+      icon: FolderInput,
+      badge: counts.inwardCount ? `${counts.inwardCount} Custody` : null,
+      badgeColor: 'bg-amber-500/20 text-amber-300',
       roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
     },
     {

@@ -20,6 +20,7 @@ import ReportsModule from './components/ReportsModule';
 import LoginScreen from './components/LoginScreen';
 import FirmSettingsModal from './components/FirmSettingsModal';
 import EvidenceVault from './components/EvidenceVault';
+import InwardOutwardRegister from './components/InwardOutwardRegister';
 
 import {
   getClients, saveClients,
@@ -34,6 +35,7 @@ import {
   getIsLoggedIn, saveIsLoggedIn,
   getFirmProfile, saveFirmProfile,
   getEvidenceDocuments, saveEvidenceDocuments,
+  getInwardOutwardRecords, saveInwardOutwardRecords,
   resetAllData
 } from './utils/storage';
 
@@ -82,6 +84,9 @@ export default function App() {
   // Evidence Documents State
   const [evidenceDocuments, setEvidenceDocumentsState] = useState(getEvidenceDocuments);
 
+  // Inward & Outward Client Material Register State
+  const [inwardOutwardRecords, setInwardOutwardRecordsState] = useState(getInwardOutwardRecords);
+
   const lastSyncedAtRef = useRef(0);
 
   // Broadcast change to central database file on host
@@ -97,6 +102,7 @@ export default function App() {
       removedClients,
       firmProfile,
       evidenceDocuments,
+      inwardOutwardRecords,
       ...changes
     };
     saveCentralDatabase(fullPayload).then((res) => {
@@ -116,6 +122,12 @@ export default function App() {
     setEvidenceDocumentsState(docs);
     saveEvidenceDocuments(docs);
     syncToCentralServer({ evidenceDocuments: docs });
+  };
+
+  const setInwardOutwardRecords = (records) => {
+    setInwardOutwardRecordsState(records);
+    saveInwardOutwardRecords(records);
+    syncToCentralServer({ inwardOutwardRecords: records });
   };
 
   // Sync to Storage and Central Server
@@ -223,6 +235,10 @@ export default function App() {
           setEvidenceDocumentsState(db.evidenceDocuments);
           saveEvidenceDocuments(db.evidenceDocuments);
         }
+        if (db.inwardOutwardRecords) {
+          setInwardOutwardRecordsState(db.inwardOutwardRecords);
+          saveInwardOutwardRecords(db.inwardOutwardRecords);
+        }
         lastSyncedAtRef.current = res.updatedAt || Date.now();
       }
     }
@@ -245,6 +261,7 @@ export default function App() {
           if (db.rocWork) setRocWorkState(db.rocWork);
           if (db.firmProfile) setFirmProfileState(db.firmProfile);
           if (db.evidenceDocuments) setEvidenceDocumentsState(db.evidenceDocuments);
+          if (db.inwardOutwardRecords) setInwardOutwardRecordsState(db.inwardOutwardRecords);
           lastSyncedAtRef.current = res.updatedAt;
         }
       }
@@ -342,7 +359,8 @@ export default function App() {
     pendingReviewCount,
     usersCount: users.length,
     removedCount: removedClients.length,
-    evidenceCount: evidenceDocuments.length
+    evidenceCount: evidenceDocuments.length,
+    inwardCount: inwardOutwardRecords.filter(r => r.status === 'In Custody' || r.status === 'Under Audit').length
   };
 
   // If user is not logged in, show dedicated Login Screen
@@ -383,7 +401,7 @@ export default function App() {
 
         {/* Mobile Navigation Pills */}
         <div className="md:hidden flex overflow-x-auto bg-slate-900 border-b border-slate-800 p-2 gap-2 fixed bottom-0 left-0 right-0 z-40">
-          {['tasks', 'dashboard', 'reports', 'evidence', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
+          {['tasks', 'dashboard', 'reports', 'evidence', 'inwardOutward', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -391,7 +409,7 @@ export default function App() {
                 activeTab === tab ? 'bg-cyan-600 text-white font-extrabold shadow' : 'bg-slate-800 text-slate-400'
               }`}
             >
-              {tab === 'tasks' ? 'Work' : tab === 'evidence' ? 'Vault' : tab}
+              {tab === 'tasks' ? 'Work' : tab === 'evidence' ? 'Vault' : tab === 'inwardOutward' ? 'Register' : tab}
             </button>
           ))}
         </div>
@@ -443,6 +461,17 @@ export default function App() {
               clients={visibleClients}
               tasks={tasks}
               currentUser={currentUser}
+            />
+          )}
+
+          {activeTab === 'inwardOutward' && (
+            <InwardOutwardRegister
+              records={inwardOutwardRecords}
+              setRecords={setInwardOutwardRecords}
+              clients={visibleClients}
+              staff={users}
+              currentUser={currentUser}
+              firmProfile={firmProfile}
             />
           )}
 

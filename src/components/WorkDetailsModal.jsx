@@ -57,8 +57,15 @@ export default function WorkDetailsModal({ work, onClose }) {
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-slate-800">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-xs text-emerald-400 font-bold">{work.id}</span>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="font-mono text-xs text-cyan-400 font-bold bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                {work.jobNumber ? `Job #${work.jobNumber}` : work.id}
+              </span>
+              {work.serviceLine && (
+                <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                  {work.serviceLine}
+                </span>
+              )}
               <span
                 className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
                   isCompleted

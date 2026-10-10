@@ -37,6 +37,7 @@ export default function TaskManager({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [serviceLineFilter, setServiceLineFilter] = useState('All');
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
 
   // Modal States
@@ -65,6 +66,8 @@ export default function TaskManager({
   const filteredTasks = userVisibleTasks.filter((t) => {
     const matchesSearch =
       t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.jobNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.serviceLine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.clientPan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.assignedToName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,7 +91,10 @@ export default function TaskManager({
     const matchesDept =
       departmentFilter === 'All' ? true : t.department === departmentFilter;
 
-    return matchesSearch && matchesStatus && matchesDept;
+    const matchesServiceLine =
+      serviceLineFilter === 'All' ? true : t.serviceLine === serviceLineFilter;
+
+    return matchesSearch && matchesStatus && matchesDept && matchesServiceLine;
   });
 
   // Works awaiting manager approval count
@@ -303,6 +309,21 @@ export default function TaskManager({
             <option value="Accounting & Bookkeeping">Accounting</option>
           </select>
 
+          {/* Service Line Filter Dropdown */}
+          <select
+            value={serviceLineFilter}
+            onChange={(e) => setServiceLineFilter(e.target.value)}
+            className="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-cyan-300 font-medium focus:outline-none"
+          >
+            <option value="All">All Service Lines</option>
+            <option value="Audit & Assurance">Audit & Assurance</option>
+            <option value="Direct Taxation & ITR">Direct Taxation & ITR</option>
+            <option value="Indirect Taxation (GST)">Indirect Taxation (GST)</option>
+            <option value="Corporate Law & ROC">Corporate Law & ROC</option>
+            <option value="Accounting & Bookkeeping">Accounting & Bookkeeping</option>
+            <option value="Advisory & Project Finance">Advisory & Finance</option>
+          </select>
+
           {/* View Mode Switcher */}
           <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button
@@ -381,6 +402,18 @@ export default function TaskManager({
                         key={t.id}
                         className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/70 hover:border-slate-600 transition space-y-2.5 shadow-md relative group"
                       >
+                        {/* Job Number & Service Line Pill */}
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-mono text-[10px] font-bold text-cyan-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/80">
+                            {t.jobNumber ? `${t.jobNumber}` : t.id}
+                          </span>
+                          {t.serviceLine && (
+                            <span className="text-[9px] font-semibold text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[120px]">
+                              {t.serviceLine}
+                            </span>
+                          )}
+                        </div>
+
                         {/* Title & Priority */}
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="text-xs font-bold text-slate-100 leading-snug">
@@ -552,9 +585,19 @@ export default function TaskManager({
                 {filteredTasks.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-800/40 transition">
                     <td className="p-3.5">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono text-[10px] font-bold text-cyan-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                          {t.jobNumber ? `Job #${t.jobNumber}` : t.id}
+                        </span>
+                        {t.serviceLine && (
+                          <span className="text-[10px] text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 font-medium">
+                            {t.serviceLine}
+                          </span>
+                        )}
+                      </div>
                       <div className="font-bold text-slate-100">{t.title}</div>
                       <div className="font-mono text-[10px] text-slate-400 mt-0.5">
-                        {t.id} • {t.statutorySection || t.category}
+                        {t.statutorySection || t.category}
                       </div>
                     </td>
                     <td className="p-3.5">

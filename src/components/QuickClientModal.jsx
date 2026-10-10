@@ -3,6 +3,7 @@ import { UserPlus, X, ShieldCheck, Key, Building2 } from 'lucide-react';
 
 export default function QuickClientModal({ onClose, onAddClient, staff }) {
   const [form, setForm] = useState({
+    clientId: `CL-${Math.floor(1001 + Math.random() * 8999)}`,
     name: '',
     tradeName: '',
     constitution: 'Private Limited Company',
@@ -24,8 +25,9 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cleanId = form.clientId.trim().toUpperCase() || `CL-${Math.floor(100 + Math.random() * 900)}`;
     const newClient = {
-      id: `CL${Math.floor(100 + Math.random() * 900)}`,
+      id: cleanId,
       name: form.name,
       tradeName: form.tradeName || form.name,
       constitution: form.constitution,
@@ -68,6 +70,41 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Client ID (Unique Code) */}
+          <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="block text-slate-300 font-semibold mb-0.5">
+                Client ID (Unique Master Code) <span className="text-emerald-400">*</span>
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Generated identifier used for file allocation, statutory tracking, and documents.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                required
+                value={form.clientId}
+                onChange={(e) => setForm({ ...form, clientId: e.target.value.toUpperCase() })}
+                placeholder="e.g. CL-1001"
+                className="w-36 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500 uppercase text-xs"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    clientId: `CL-${Math.floor(1001 + Math.random() * 8999)}`
+                  })
+                }
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold border border-slate-700 shrink-0"
+                title="Generate another sequential Client ID"
+              >
+                Auto Generate
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Client / Legal Entity Name *</label>

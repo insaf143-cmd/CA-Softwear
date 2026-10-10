@@ -6,7 +6,8 @@ import {
   INITIAL_TASKS,
   INITIAL_INVOICES,
   INITIAL_USERS,
-  INITIAL_REMOVED_CLIENTS
+  INITIAL_REMOVED_CLIENTS,
+  INITIAL_INWARD_OUTWARD
 } from '../data/mockData';
 
 const KEYS = {
@@ -19,7 +20,8 @@ const KEYS = {
   INVOICES: 'digica_invoices',
   USERS: 'digica_users',
   CURRENT_USER: 'digica_current_user',
-  EVIDENCE_DOCS: 'digica_evidence_docs'
+  EVIDENCE_DOCS: 'digica_evidence_docs',
+  INWARD_OUTWARD: 'digica_inward_outward'
 };
 
 const getItem = (key, initialValue) => {
@@ -77,6 +79,9 @@ export const saveInvoices = (data) => setItem(KEYS.INVOICES, data);
 export const getEvidenceDocuments = () => getItem(KEYS.EVIDENCE_DOCS, []);
 export const saveEvidenceDocuments = (data) => setItem(KEYS.EVIDENCE_DOCS, data);
 
+export const getInwardOutwardRecords = () => getItem(KEYS.INWARD_OUTWARD, INITIAL_INWARD_OUTWARD);
+export const saveInwardOutwardRecords = (data) => setItem(KEYS.INWARD_OUTWARD, data);
+
 export const getUsers = () => {
   const users = getItem(KEYS.USERS, INITIAL_USERS);
   if (!users || users.length === 0) return [INITIAL_USERS[0]];
@@ -91,12 +96,26 @@ export const getUsers = () => {
 };
 export const saveUsers = (data) => setItem(KEYS.USERS, data);
 
-export const getCurrentUser = () => getItem(KEYS.CURRENT_USER, INITIAL_USERS[0]); // Default Super Admin
-export const saveCurrentUser = (user) => setItem(KEYS.CURRENT_USER, user);
+export const getCurrentUser = () => {
+  const saved = localStorage.getItem(KEYS.CURRENT_USER);
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return null;
+  }
+};
+export const saveCurrentUser = (user) => {
+  if (user) {
+    setItem(KEYS.CURRENT_USER, user);
+  } else {
+    localStorage.removeItem(KEYS.CURRENT_USER);
+  }
+};
 
 export const getIsLoggedIn = () => {
   const saved = localStorage.getItem('digica_logged_in');
-  return saved !== null ? JSON.parse(saved) : true;
+  return saved !== null ? JSON.parse(saved) : false; // Default to false so login screen shows first
 };
 export const saveIsLoggedIn = (val) => {
   localStorage.setItem('digica_logged_in', JSON.stringify(val));
@@ -123,9 +142,10 @@ export const clearAllDataAndStartFresh = () => {
   localStorage.setItem(KEYS.TASKS, JSON.stringify([]));
   localStorage.setItem(KEYS.INVOICES, JSON.stringify([]));
   localStorage.setItem(KEYS.EVIDENCE_DOCS, JSON.stringify([]));
+  localStorage.setItem(KEYS.INWARD_OUTWARD, JSON.stringify([]));
   localStorage.setItem(KEYS.USERS, JSON.stringify([masterAdmin]));
-  localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(masterAdmin));
-  localStorage.setItem('digica_logged_in', JSON.stringify(true));
+  localStorage.removeItem(KEYS.CURRENT_USER);
+  localStorage.setItem('digica_logged_in', JSON.stringify(false));
   window.location.reload();
 };
 
@@ -151,6 +171,7 @@ export const resetAllData = () => {
   localStorage.setItem(KEYS.ROC, JSON.stringify(INITIAL_ROC_WORK));
   localStorage.setItem(KEYS.TASKS, JSON.stringify(INITIAL_TASKS));
   localStorage.setItem(KEYS.INVOICES, JSON.stringify(INITIAL_INVOICES));
+  localStorage.setItem(KEYS.INWARD_OUTWARD, JSON.stringify(INITIAL_INWARD_OUTWARD));
   localStorage.setItem(KEYS.USERS, JSON.stringify(INITIAL_USERS));
   localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
   localStorage.setItem('digica_logged_in', JSON.stringify(true));

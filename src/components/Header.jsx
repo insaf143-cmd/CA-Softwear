@@ -195,19 +195,6 @@ export default function Header({
             <LogOut className="w-4 h-4" />
           </button>
         )}
-
-        {/* Reset Demo Data Button */}
-        <button
-          onClick={() => {
-            if (window.confirm('Reset all CA firm data to default sample records?')) {
-              onResetData();
-            }
-          }}
-          className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition"
-          title="Reset Demo Data"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
       </div>
     </header>
   );

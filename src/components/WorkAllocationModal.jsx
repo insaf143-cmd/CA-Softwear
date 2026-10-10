@@ -25,6 +25,8 @@ export default function WorkAllocationModal({
   const selectedClient = clients.find((c) => c.id === selectedClientId) || clients[0] || {};
 
   const [formData, setFormData] = useState({
+    jobNumber: `JOB-${new Date().getFullYear()}-${Math.floor(101 + Math.random() * 899)}`,
+    serviceLine: 'Indirect Taxation (GST)',
     title: '',
     department: 'GST Compliance',
     assignedTo: staff[2]?.id || staff[0]?.id || '',
@@ -38,6 +40,15 @@ export default function WorkAllocationModal({
     estimatedHours: '6 hrs',
     feeQuote: '₹10,000'
   });
+
+  const SERVICE_LINES = [
+    'Audit & Assurance',
+    'Direct Taxation & ITR',
+    'Indirect Taxation (GST)',
+    'Corporate Law & ROC',
+    'Accounting & Bookkeeping',
+    'Advisory & Project Finance'
+  ];
 
   const departmentSections = {
     'GST Compliance': 'Section 39 / Rule 61 (GSTR-3B & GSTR-1)',
@@ -67,6 +78,8 @@ export default function WorkAllocationModal({
 
     const newWorkItem = {
       id: `CA-WRK-${Date.now().toString().slice(-4)}`,
+      jobNumber: formData.jobNumber.trim().toUpperCase() || `JOB-${Date.now().toString().slice(-4)}`,
+      serviceLine: formData.serviceLine || 'Audit & Assurance',
       title: formData.title.trim(),
       clientId: selectedClient.id,
       clientName: selectedClient.name,
@@ -124,6 +137,63 @@ export default function WorkAllocationModal({
 
         {/* Allocation Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Job Number (Work Docket) */}
+          <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label className="block text-slate-200 font-bold mb-0.5">
+                Job Number (Work Order / Docket No) <span className="text-cyan-400">*</span>
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Unique sequential audit identifier opened for this job assignment.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                required
+                value={formData.jobNumber}
+                onChange={(e) => setFormData({ ...formData, jobNumber: e.target.value.toUpperCase() })}
+                placeholder="JOB-2026-001"
+                className="w-40 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-cyan-400 font-mono font-bold focus:outline-none focus:border-cyan-500 uppercase text-xs"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    jobNumber: `JOB-${new Date().getFullYear()}-${Math.floor(101 + Math.random() * 899)}`
+                  })
+                }
+                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold border border-slate-700 shrink-0"
+              >
+                Auto Generate
+              </button>
+            </div>
+          </div>
+
+          {/* Service Line Selection Buttons */}
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1.5">
+              Service Line (Practice Division) <span className="text-cyan-400">*</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {SERVICE_LINES.map((sl) => (
+                <button
+                  type="button"
+                  key={sl}
+                  onClick={() => setFormData({ ...formData, serviceLine: sl })}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                    formData.serviceLine === sl
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                      : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                  }`}
+                >
+                  {sl}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Work Title */}
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
