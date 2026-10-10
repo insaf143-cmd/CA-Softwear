@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "id": "ADMIN01",
+      "name": "Admin User",
+      "email": "admin@cadesk.in",
+      "password": "admin",
+      "role": "SUPER_ADMIN",
+      "status": "Active",
+      "designation": "Managing Partner / Admin",
+      "mobile": "+91 99999 00000",
+      "allocatedClientIds": []
+    }
+  ],
+  "clients": [],
+  "removedClients": [],
+  "gstWork": [],
+  "itWork": [],
+  "rocWork": [],
+  "tasks": [],
+  "invoices": [],
+  "firmProfile": {
+    "firmName": "M/s. Sharma & Associates",
+    "tagline": "Chartered Accountants",
+    "frn": "129988W",
+    "gstin": "27AAAAA1234F1Z1",
+    "address": "Suite 401, Nariman Point, Mumbai - 400021",
+    "phone": "+91 98765 43210",
+    "email": "contact@sharma-ca.com",
+    "partnerName": "CA Rajesh Sharma"
+  },
+  "evidenceDocuments": [],
+  "updatedAt": 1775815000000
+}

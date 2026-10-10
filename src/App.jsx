@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -19,6 +19,7 @@ import ClientRemovalTab from './components/ClientRemovalTab';
 import ReportsModule from './components/ReportsModule';
 import LoginScreen from './components/LoginScreen';
 import FirmSettingsModal from './components/FirmSettingsModal';
+import EvidenceVault from './components/EvidenceVault';
 
 import {
   getClients, saveClients,
@@ -32,6 +33,7 @@ import {
   getCurrentUser, saveCurrentUser,
   getIsLoggedIn, saveIsLoggedIn,
   getFirmProfile, saveFirmProfile,
+  getEvidenceDocuments, saveEvidenceDocuments,
   resetAllData
 } from './utils/storage';
 
@@ -42,6 +44,12 @@ import {
   syncTasksToFirebase, subscribeToTasksFromFirebase,
   syncInvoicesToFirebase, subscribeToInvoicesFromFirebase
 } from './services/firebaseService';
+
+import {
+  fetchCentralDatabase,
+  saveCentralDatabase,
+  checkDatabaseStatus
+} from './services/apiService';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(getIsLoggedIn);
@@ -70,13 +78,52 @@ export default function App() {
 
   // Firm & Company Profile State
   const [firmProfile, setFirmProfileState] = useState(getFirmProfile);
+
+  // Evidence Documents State
+  const [evidenceDocuments, setEvidenceDocumentsState] = useState(getEvidenceDocuments);
+
+  const lastSyncedAtRef = useRef(0);
+
+  // Broadcast change to central database file on host
+  const syncToCentralServer = (changes = {}) => {
+    const fullPayload = {
+      users,
+      clients,
+      tasks,
+      invoices,
+      gstWork,
+      itWork,
+      rocWork,
+      removedClients,
+      firmProfile,
+      evidenceDocuments,
+      ...changes
+    };
+    saveCentralDatabase(fullPayload).then((res) => {
+      if (res && res.updatedAt) {
+        lastSyncedAtRef.current = res.updatedAt;
+      }
+    });
+  };
+
   const setFirmProfile = (profile) => {
     setFirmProfileState(profile);
     saveFirmProfile(profile);
+    syncToCentralServer({ firmProfile: profile });
   };
 
-  // Sync to Storage
-  const setUsers = (data) => { setUsersState(data); saveUsers(data); };
+  const setEvidenceDocuments = (docs) => {
+    setEvidenceDocumentsState(docs);
+    saveEvidenceDocuments(docs);
+    syncToCentralServer({ evidenceDocuments: docs });
+  };
+
+  // Sync to Storage and Central Server
+  const setUsers = (data) => {
+    setUsersState(data);
+    saveUsers(data);
+    syncToCentralServer({ users: data });
+  };
   const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
 
   const handleLogin = (user) => {
@@ -91,13 +138,123 @@ export default function App() {
     saveIsLoggedIn(false);
   };
 
-  const setClients = (data) => { setClientsState(data); saveClients(data); syncClientsToFirebase(data); };
-  const setRemovedClients = (data) => { setRemovedClientsState(data); saveRemovedClients(data); };
-  const setGstWork = (data) => { setGstWorkState(data); saveGSTWork(data); syncGSTWorkToFirebase(data); };
-  const setItWork = (data) => { setItWorkState(data); saveITWork(data); syncITWorkToFirebase(data); };
-  const setRocWork = (data) => { setRocWorkState(data); saveROCWork(data); };
-  const setTasks = (data) => { setTasksState(data); saveTasks(data); syncTasksToFirebase(data); };
-  const setInvoices = (data) => { setInvoicesState(data); saveInvoices(data); syncInvoicesToFirebase(data); };
+  const setClients = (data) => {
+    setClientsState(data);
+    saveClients(data);
+    syncClientsToFirebase(data);
+    syncToCentralServer({ clients: data });
+  };
+  const setRemovedClients = (data) => {
+    setRemovedClientsState(data);
+    saveRemovedClients(data);
+    syncToCentralServer({ removedClients: data });
+  };
+  const setGstWork = (data) => {
+    setGstWorkState(data);
+    saveGSTWork(data);
+    syncGSTWorkToFirebase(data);
+    syncToCentralServer({ gstWork: data });
+  };
+  const setItWork = (data) => {
+    setItWorkState(data);
+    saveITWork(data);
+    syncITWorkToFirebase(data);
+    syncToCentralServer({ itWork: data });
+  };
+  const setRocWork = (data) => {
+    setRocWorkState(data);
+    saveROCWork(data);
+    syncToCentralServer({ rocWork: data });
+  };
+  const setTasks = (data) => {
+    setTasksState(data);
+    saveTasks(data);
+    syncTasksToFirebase(data);
+    syncToCentralServer({ tasks: data });
+  };
+  const setInvoices = (data) => {
+    setInvoicesState(data);
+    saveInvoices(data);
+    syncInvoicesToFirebase(data);
+    syncToCentralServer({ invoices: data });
+  };
+
+  // Central Database LAN Sync & Multi-User Polling
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initCentralDb() {
+      const res = await fetchCentralDatabase();
+      if (res && res.success && res.data && isMounted) {
+        const db = res.data;
+        if (db.users && db.users.length > 0) {
+          setUsersState(db.users);
+          saveUsers(db.users);
+        }
+        if (db.clients) {
+          setClientsState(db.clients);
+          saveClients(db.clients);
+        }
+        if (db.tasks) {
+          setTasksState(db.tasks);
+          saveTasks(db.tasks);
+        }
+        if (db.invoices) {
+          setInvoicesState(db.invoices);
+          saveInvoices(db.invoices);
+        }
+        if (db.gstWork) {
+          setGstWorkState(db.gstWork);
+          saveGSTWork(db.gstWork);
+        }
+        if (db.itWork) {
+          setItWorkState(db.itWork);
+          saveITWork(db.itWork);
+        }
+        if (db.rocWork) {
+          setRocWorkState(db.rocWork);
+          saveROCWork(db.rocWork);
+        }
+        if (db.firmProfile) {
+          setFirmProfileState(db.firmProfile);
+          saveFirmProfile(db.firmProfile);
+        }
+        if (db.evidenceDocuments) {
+          setEvidenceDocumentsState(db.evidenceDocuments);
+          saveEvidenceDocuments(db.evidenceDocuments);
+        }
+        lastSyncedAtRef.current = res.updatedAt || Date.now();
+      }
+    }
+
+    initCentralDb();
+
+    // Check for updates made by other users every 2.5 seconds
+    const interval = setInterval(async () => {
+      const status = await checkDatabaseStatus();
+      if (status && status.connected && status.updatedAt > lastSyncedAtRef.current) {
+        const res = await fetchCentralDatabase();
+        if (res && res.success && res.data && isMounted) {
+          const db = res.data;
+          if (db.users) setUsersState(db.users);
+          if (db.clients) setClientsState(db.clients);
+          if (db.tasks) setTasksState(db.tasks);
+          if (db.invoices) setInvoicesState(db.invoices);
+          if (db.gstWork) setGstWorkState(db.gstWork);
+          if (db.itWork) setItWorkState(db.itWork);
+          if (db.rocWork) setRocWorkState(db.rocWork);
+          if (db.firmProfile) setFirmProfileState(db.firmProfile);
+          if (db.evidenceDocuments) setEvidenceDocumentsState(db.evidenceDocuments);
+          lastSyncedAtRef.current = res.updatedAt;
+        }
+      }
+    }, 2500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Subscribe to Firebase Firestore if connected
   useEffect(() => {
@@ -184,7 +341,8 @@ export default function App() {
       : tasks.filter(t => t.status !== 'Completed').length,
     pendingReviewCount,
     usersCount: users.length,
-    removedCount: removedClients.length
+    removedCount: removedClients.length,
+    evidenceCount: evidenceDocuments.length
   };
 
   // If user is not logged in, show dedicated Login Screen
@@ -225,15 +383,15 @@ export default function App() {
 
         {/* Mobile Navigation Pills */}
         <div className="md:hidden flex overflow-x-auto bg-slate-900 border-b border-slate-800 p-2 gap-2 fixed bottom-0 left-0 right-0 z-40">
-          {['tasks', 'dashboard', 'reports', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
+          {['tasks', 'dashboard', 'reports', 'evidence', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap uppercase ${
-                activeTab === tab ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                activeTab === tab ? 'bg-cyan-600 text-white font-extrabold shadow' : 'bg-slate-800 text-slate-400'
               }`}
             >
-              {tab === 'tasks' ? 'Work' : tab}
+              {tab === 'tasks' ? 'Work' : tab === 'evidence' ? 'Vault' : tab}
             </button>
           ))}
         </div>
@@ -275,6 +433,16 @@ export default function App() {
               clients={clients}
               currentUser={currentUser}
               firmProfile={firmProfile}
+            />
+          )}
+
+          {activeTab === 'evidence' && (
+            <EvidenceVault
+              evidenceDocuments={evidenceDocuments}
+              setEvidenceDocuments={setEvidenceDocuments}
+              clients={visibleClients}
+              tasks={tasks}
+              currentUser={currentUser}
             />
           )}
 

@@ -18,7 +18,8 @@ const KEYS = {
   TASKS: 'digica_tasks',
   INVOICES: 'digica_invoices',
   USERS: 'digica_users',
-  CURRENT_USER: 'digica_current_user'
+  CURRENT_USER: 'digica_current_user',
+  EVIDENCE_DOCS: 'digica_evidence_docs'
 };
 
 const getItem = (key, initialValue) => {
@@ -73,6 +74,9 @@ export const saveTasks = (data) => setItem(KEYS.TASKS, data);
 export const getInvoices = () => getItem(KEYS.INVOICES, INITIAL_INVOICES);
 export const saveInvoices = (data) => setItem(KEYS.INVOICES, data);
 
+export const getEvidenceDocuments = () => getItem(KEYS.EVIDENCE_DOCS, []);
+export const saveEvidenceDocuments = (data) => setItem(KEYS.EVIDENCE_DOCS, data);
+
 export const getUsers = () => {
   const users = getItem(KEYS.USERS, INITIAL_USERS);
   if (!users || users.length === 0) return [INITIAL_USERS[0]];
@@ -118,6 +122,7 @@ export const clearAllDataAndStartFresh = () => {
   localStorage.setItem(KEYS.ROC, JSON.stringify([]));
   localStorage.setItem(KEYS.TASKS, JSON.stringify([]));
   localStorage.setItem(KEYS.INVOICES, JSON.stringify([]));
+  localStorage.setItem(KEYS.EVIDENCE_DOCS, JSON.stringify([]));
   localStorage.setItem(KEYS.USERS, JSON.stringify([masterAdmin]));
   localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(masterAdmin));
   localStorage.setItem('digica_logged_in', JSON.stringify(true));

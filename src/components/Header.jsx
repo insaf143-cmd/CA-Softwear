@@ -53,8 +53,12 @@ export default function Header({
         <div>
           <h1 className="text-base md:text-lg font-bold text-slate-100 leading-tight flex items-center gap-2">
             DigiCA Suite
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
-              CA Practice OS
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700 font-bold uppercase">
+              Enterprise
+            </span>
+            <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              LAN DB Synced
             </span>
           </h1>
           <div className="flex items-center gap-1.5 mt-0.5">

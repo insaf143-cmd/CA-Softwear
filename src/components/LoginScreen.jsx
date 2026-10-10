@@ -3,14 +3,17 @@ import {
   ShieldCheck,
   Building2,
   Lock,
-  Mail,
   UserCheck,
   ArrowRight,
   Eye,
   EyeOff,
   Briefcase,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database,
+  ChevronDown,
+  ChevronUp,
+  Server
 } from 'lucide-react';
 import { getFirmProfile } from '../utils/storage';
 
@@ -20,6 +23,7 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showQuickProfiles, setShowQuickProfiles] = useState(false);
 
   const handleManualLogin = (e) => {
     e.preventDefault();
@@ -36,23 +40,12 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
 
     if (targetUser) {
       if (targetUser.status === 'Blocked') {
-        setErrorMsg('This account is blocked by the Super Admin. Please contact office administration.');
+        setErrorMsg('Your account has been deactivated. Contact your firm admin.');
         return;
       }
       onLogin(targetUser);
     } else {
-      // If user matched User ID or email but password was wrong
-      const userExists = users.find(
-        (u) =>
-          u.id?.toLowerCase() === identifier ||
-          u.email?.toLowerCase() === identifier ||
-          u.name?.toLowerCase() === identifier
-      );
-      if (userExists) {
-        setErrorMsg('Invalid password entered. Please try again or use Quick Select.');
-      } else {
-        setErrorMsg('User not found. Please enter a valid registered User ID or Email.');
-      }
+      setErrorMsg('Invalid User ID or Password. Please check credentials.');
     }
   };
 
@@ -62,186 +55,158 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
-      {/* Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Background Subtle Corporate Gradients */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-b from-cyan-900/10 via-slate-900/0 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 right-10 w-96 h-96 bg-emerald-900/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-4xl space-y-6 relative z-10">
-        {/* Header Branding */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 text-white shadow-xl shadow-emerald-500/20 mb-2">
-            <ShieldCheck className="w-9 h-9" />
+      <div className="w-full max-w-xl space-y-6 relative z-10 my-auto">
+        {/* Header Enterprise Branding */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-800 via-slate-900 to-slate-800 border border-slate-700/80 text-cyan-400 shadow-2xl mb-1">
+            <Building2 className="w-8 h-8 text-cyan-400" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center justify-center gap-2">
-            DigiCA Suite <span className="text-emerald-400 font-mono text-sm px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">v2.5</span>
-          </h1>
-          <p className="text-sm text-slate-300 font-semibold flex items-center justify-center gap-1.5">
-            <Building2 className="w-4 h-4 text-cyan-400" />
-            {currentProfile.firmName}{currentProfile.tagline ? `, ${currentProfile.tagline}` : ''}
-          </p>
-          <p className="text-xs text-slate-500">
-            {currentProfile.frn ? `Firm Registration (FRN): ${currentProfile.frn} • ` : ''}Work Allocation, Statutory Audit & Practice Management
-          </p>
+
+          <div>
+            <div className="flex items-center justify-center gap-2 mb-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700">
+                ICAI Enterprise Practice Edition
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Central LAN Database Synced
+              </span>
+            </div>
+
+            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+              {currentProfile.firmName}
+            </h1>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              {currentProfile.tagline || 'Chartered Accountants'} • FRN: <span className="font-mono text-slate-200">{currentProfile.frn || '129988W'}</span>
+            </p>
+          </div>
         </div>
 
-        {/* Main Grid: Form on Left, Quick Profiles on Right */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
-          {/* Left Column: Email & Password Form */}
-          <div className="md:col-span-6 space-y-5 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-800 pb-6 md:pb-0 md:pr-8">
+        {/* Main Enterprise Sign-In Card */}
+        <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+          <div>
+            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-cyan-400" />
+              Sign in to Practice Management Portal
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Enter your assigned User ID and password to access your allocated files.
+            </p>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
             <div>
-              <div className="mb-4">
-                <h2 className="text-lg font-bold text-slate-100">Sign in to Practice Portal</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Enter your firm credentials to access your allocated files and department queue.
-                </p>
+              <label className="block text-slate-300 font-semibold mb-1.5">
+                User ID / Login ID <span className="text-cyan-400">*</span>
+              </label>
+              <div className="relative">
+                <UserCheck className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. ADMIN01, STAFF01, or ROHAN"
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono text-xs shadow-inner"
+                />
               </div>
+            </div>
 
-              {errorMsg && (
-                <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    User ID or Email <span className="text-emerald-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input
-                      type="text"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. ADMIN01, ROHAN, or rajesh@cadesk.in"
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password..."
-                      className="w-full pl-9 pr-10 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1.5">
+                Password <span className="text-cyan-400">*</span>
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your security password..."
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-xs shadow-inner"
+                />
                 <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                 >
-                  <span>Authorize & Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </form>
-            </div>
-
-            <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>Cloud DB: Firebase Firestore</span>
-              <span className="text-emerald-400 font-mono">RBAC Enabled</span>
-            </div>
-          </div>
-
-          {/* Right Column: Quick Profile Selectors for Instant Testing */}
-          <div className="md:col-span-6 space-y-3">
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                <UserCheck className="w-4 h-4 text-emerald-400" />
-                One-Click Quick Login by Role
-              </h3>
-              <p className="text-[11px] text-slate-500 mb-3">
-                Select any firm role below to test Admin allocation, Manager review, or Staff restricted views instantly:
-              </p>
-            </div>
-
-            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-              {users.map((u) => {
-                const isAdmin = u.role === 'SUPER_ADMIN' || u.role === 'ADMIN';
-                const isManager = u.role === 'MANAGER';
-                const isStaff = u.role === 'NORMAL_USER';
-
-                return (
-                  <button
-                    key={u.id}
-                    onClick={() => handleQuickLogin(u)}
-                    className="w-full p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 transition flex items-center justify-between text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs uppercase ${
-                          isAdmin
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                            : isManager
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        }`}
-                      >
-                        {u.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300 transition flex items-center gap-1.5">
-                          <span>{u.name}</span>
-                          <span className="font-mono text-[10px] text-emerald-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-semibold">
-                            ID: {u.id}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                          <span>{u.designation}</span>
-                          <span className="text-slate-500 font-mono text-[10px]">Key: {u.password}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <span
-                        className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
-                          isAdmin
-                            ? 'bg-purple-500/10 text-purple-300 border border-purple-500/30'
-                            : isManager
-                            ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
-                            : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-                        }`}
-                      >
-                        {u.role === 'SUPER_ADMIN' ? 'Admin' : u.role === 'MANAGER' ? 'Manager' : 'User (Staff)'}
-                      </span>
-                      <div className="text-[10px] text-emerald-400 font-semibold mt-0.5 opacity-0 group-hover:opacity-100 transition flex items-center justify-end gap-1">
-                        <span>Log in</span> &rarr;
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <div className="flex items-center gap-1 font-semibold text-slate-300">
-                <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
-                Permissions Breakdown:
               </div>
-              <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-400">
-                <li><strong className="text-purple-300">Admin:</strong> Create work, allocate to staff, view all reports.</li>
-                <li><strong className="text-blue-300">Manager:</strong> Review submitted works, approve, or transfer to next department.</li>
-                <li><strong className="text-emerald-300">Staff/User:</strong> Only see their own allocated work, submit when finished.</li>
-              </ul>
             </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 flex items-center justify-center gap-2 transition hover:scale-[1.01]"
+            >
+              <span>Authorize & Sign In</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+
+          {/* Connection Footer */}
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <Server className="w-3.5 h-3.5 text-emerald-400" />
+              <span>LAN Database: Live</span>
+            </span>
+            <span className="text-slate-400">All Users Synced</span>
           </div>
+        </div>
+
+        {/* Collapsible Quick Profile Switcher (Optional, for easy testing) */}
+        <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowQuickProfiles(!showQuickProfiles)}
+            className="w-full flex items-center justify-between text-slate-400 hover:text-slate-200 transition font-medium text-[11px]"
+          >
+            <span className="flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Available Firm User Accounts ({users.length})</span>
+            </span>
+            {showQuickProfiles ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          {showQuickProfiles && (
+            <div className="mt-3 pt-3 border-t border-slate-800 space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {users.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => handleQuickLogin(u)}
+                  className="w-full p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 flex items-center justify-between text-left transition group text-xs"
+                >
+                  <div className="truncate">
+                    <span className="font-bold text-slate-200 block truncate group-hover:text-cyan-300">
+                      {u.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      ID: <strong className="text-emerald-400">{u.id}</strong> • Role: {u.role}
+                    </span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-semibold group-hover:bg-cyan-600 group-hover:text-white transition shrink-0">
+                    Sign in
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

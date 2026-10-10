@@ -12,7 +12,8 @@ import {
   Layers,
   UserCheck,
   Trash2,
-  BarChart3
+  BarChart3,
+  FolderArchive
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }) {
@@ -52,6 +53,14 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }
       badge: 'Live',
       badgeColor: 'bg-emerald-500/10 text-emerald-400',
       roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
+    },
+    {
+      id: 'evidence',
+      label: 'Evidence & Documents',
+      icon: FolderArchive,
+      badge: counts.evidenceCount ? `${counts.evidenceCount} Files` : 'Vault',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
     },
     {
       id: 'clients',
