@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Receipt, Plus, Search, Printer, CheckCircle, Clock, FileText, X } from 'lucide-react';
 
-export default function BillingModule({ invoices, setInvoices, clients }) {
+export default function BillingModule({ invoices, setInvoices, clients, firmProfile }) {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [newInv, setNewInv] = useState({
     clientId: clients[0]?.id || '',
@@ -282,10 +282,16 @@ export default function BillingModule({ invoices, setInvoices, clients }) {
             {/* Letterhead */}
             <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">M/s. SHARMA & ASSOCIATES</h2>
-                <p className="text-xs font-semibold text-slate-600">CHARTERED ACCOUNTANTS</p>
-                <p className="text-[11px] text-slate-500 mt-1">FRN: 129988W | GSTIN: 27AAAAA1234F1Z1</p>
-                <p className="text-[11px] text-slate-500">Suite 401, Nariman Point, Mumbai - 400021</p>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                  {firmProfile?.firmName ? firmProfile.firmName.toUpperCase() : 'M/s. SHARMA & ASSOCIATES'}
+                </h2>
+                <p className="text-xs font-semibold text-slate-600">
+                  {firmProfile?.tagline ? firmProfile.tagline.toUpperCase() : 'CHARTERED ACCOUNTANTS'}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  FRN: {firmProfile?.frn || '129988W'} | GSTIN: {firmProfile?.gstin || '27AAAAA1234F1Z1'}
+                </p>
+                <p className="text-[11px] text-slate-500">{firmProfile?.address || 'Suite 401, Nariman Point, Mumbai - 400021'}</p>
               </div>
               <div className="text-right">
                 <span className="px-3 py-1 bg-slate-900 text-white text-xs font-bold uppercase rounded">
@@ -355,8 +361,8 @@ export default function BillingModule({ invoices, setInvoices, clients }) {
               </div>
               <div className="text-center">
                 <div className="h-10 border-b border-slate-400 mb-1 w-32"></div>
-                <p className="font-bold text-slate-800">For Sharma & Associates</p>
-                <p className="text-[10px]">Partner (CA Rajesh Sharma)</p>
+                <p className="font-bold text-slate-800">For {firmProfile?.firmName || 'Sharma & Associates'}</p>
+                <p className="text-[10px]">Partner ({firmProfile?.partnerName || 'CA Rajesh Sharma'})</p>
               </div>
             </div>
 

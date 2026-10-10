@@ -12,8 +12,10 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { getFirmProfile } from '../utils/storage';
 
-export default function LoginScreen({ users, onLogin }) {
+export default function LoginScreen({ users, onLogin, firmProfile }) {
+  const currentProfile = firmProfile || getFirmProfile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -75,10 +77,10 @@ export default function LoginScreen({ users, onLogin }) {
           </h1>
           <p className="text-sm text-slate-300 font-semibold flex items-center justify-center gap-1.5">
             <Building2 className="w-4 h-4 text-cyan-400" />
-            M/s. Sharma & Associates, Chartered Accountants
+            {currentProfile.firmName}{currentProfile.tagline ? `, ${currentProfile.tagline}` : ''}
           </p>
           <p className="text-xs text-slate-500">
-            Firm Registration (FRN): 129988W • Work Allocation, Statutory Audit & Practice Management
+            {currentProfile.frn ? `Firm Registration (FRN): ${currentProfile.frn} • ` : ''}Work Allocation, Statutory Audit & Practice Management
           </p>
         </div>
 

@@ -35,7 +35,8 @@ export default function ReportsModule({
   itWork,
   rocWork,
   clients,
-  currentUser
+  currentUser,
+  firmProfile
 }) {
   const [activeReportTab, setActiveReportTab] = useState('worksStatus'); // 'worksStatus' | 'userWise'
   const [statusFilter, setStatusFilter] = useState('All');
@@ -284,7 +285,7 @@ export default function ReportsModule({
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold uppercase">
               Management Intelligence
             </span>
-            <span className="text-xs text-slate-400">Sharma & Associates CA</span>
+            <span className="text-xs text-slate-400">{firmProfile?.firmName || 'Sharma & Associates CA'}</span>
           </div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-emerald-400" />

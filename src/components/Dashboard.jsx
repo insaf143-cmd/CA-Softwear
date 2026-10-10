@@ -22,7 +22,8 @@ export default function Dashboard({
   invoices,
   setActiveTab,
   onOpenNewClient,
-  onOpenTaxCalc
+  onOpenTaxCalc,
+  firmProfile
 }) {
   const pendingGstCount = gstWork.filter(g => g.status !== 'Filed').length;
   const filedGstCount = gstWork.filter(g => g.status === 'Filed').length;
@@ -327,16 +328,22 @@ export default function Dashboard({
           <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 space-y-3">
             <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              CA Firm System Info
+              {firmProfile?.firmName || 'CA Firm'} System Info
             </h4>
             <div className="text-xs text-slate-400 space-y-2">
               <div className="flex justify-between">
                 <span>Firm Registration (FRN):</span>
-                <span className="font-mono text-slate-200 font-semibold">129988W</span>
+                <span className="font-mono text-slate-200 font-semibold">{firmProfile?.frn || '129988W'}</span>
               </div>
+              {firmProfile?.gstin && (
+                <div className="flex justify-between">
+                  <span>Firm GSTIN:</span>
+                  <span className="font-mono text-emerald-400 font-semibold">{firmProfile.gstin}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Active Articles & Staff:</span>
-                <span className="font-mono text-emerald-400 font-semibold">5 Members</span>
+                <span className="font-mono text-emerald-400 font-semibold">Ready</span>
               </div>
               <div className="flex justify-between">
                 <span>GST Portal Integration:</span>

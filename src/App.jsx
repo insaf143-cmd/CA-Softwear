@@ -18,6 +18,7 @@ import UserManagement from './components/UserManagement';
 import ClientRemovalTab from './components/ClientRemovalTab';
 import ReportsModule from './components/ReportsModule';
 import LoginScreen from './components/LoginScreen';
+import FirmSettingsModal from './components/FirmSettingsModal';
 
 import {
   getClients, saveClients,
@@ -30,6 +31,7 @@ import {
   getUsers, saveUsers,
   getCurrentUser, saveCurrentUser,
   getIsLoggedIn, saveIsLoggedIn,
+  getFirmProfile, saveFirmProfile,
   resetAllData
 } from './utils/storage';
 
@@ -64,6 +66,14 @@ export default function App() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
   const [showGitHubModal, setShowGitHubModal] = useState(false);
+  const [showFirmSettingsModal, setShowFirmSettingsModal] = useState(false);
+
+  // Firm & Company Profile State
+  const [firmProfile, setFirmProfileState] = useState(getFirmProfile);
+  const setFirmProfile = (profile) => {
+    setFirmProfileState(profile);
+    saveFirmProfile(profile);
+  };
 
   // Sync to Storage
   const setUsers = (data) => { setUsersState(data); saveUsers(data); };
@@ -179,7 +189,7 @@ export default function App() {
 
   // If user is not logged in, show dedicated Login Screen
   if (!isLoggedIn || !currentUser) {
-    return <LoginScreen users={users} onLogin={handleLogin} />;
+    return <LoginScreen users={users} onLogin={handleLogin} firmProfile={firmProfile} />;
   }
 
   return (
@@ -192,6 +202,8 @@ export default function App() {
         onOpenTaxCalc={() => setShowTaxCalcModal(true)}
         onOpenFirebaseModal={() => setShowFirebaseModal(true)}
         onOpenGitHubModal={() => setShowGitHubModal(true)}
+        onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
+        firmProfile={firmProfile}
         onResetData={resetAllData}
         users={users}
         currentUser={currentUser}
@@ -238,6 +250,7 @@ export default function App() {
               setActiveTab={setActiveTab}
               onOpenNewClient={() => setShowNewClientModal(true)}
               onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+              firmProfile={firmProfile}
             />
           )}
 
@@ -261,6 +274,7 @@ export default function App() {
               rocWork={rocWork}
               clients={clients}
               currentUser={currentUser}
+              firmProfile={firmProfile}
             />
           )}
 
@@ -281,6 +295,7 @@ export default function App() {
               gstWork={visibleGstWork}
               setGstWork={setGstWork}
               clients={visibleClients}
+              firmProfile={firmProfile}
             />
           )}
 
@@ -304,6 +319,7 @@ export default function App() {
               invoices={invoices}
               setInvoices={setInvoices}
               clients={visibleClients}
+              firmProfile={firmProfile}
             />
           )}
 
@@ -317,6 +333,7 @@ export default function App() {
               setUsers={setUsers}
               currentUser={currentUser}
               clients={clients}
+              onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
             />
           )}
 
@@ -362,6 +379,14 @@ export default function App() {
       {showGitHubModal && (
         <GitHubSyncModal
           onClose={() => setShowGitHubModal(false)}
+        />
+      )}
+
+      {showFirmSettingsModal && (
+        <FirmSettingsModal
+          firmProfile={firmProfile}
+          onSaveFirmProfile={setFirmProfile}
+          onClose={() => setShowFirmSettingsModal(false)}
         />
       )}
     </div>

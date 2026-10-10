@@ -124,6 +124,20 @@ export const clearAllDataAndStartFresh = () => {
   window.location.reload();
 };
 
+export const DEFAULT_FIRM_PROFILE = {
+  firmName: 'M/s. Sharma & Associates',
+  tagline: 'Chartered Accountants',
+  frn: '129988W',
+  gstin: '27AAAAA1234F1Z1',
+  address: 'Suite 401, Nariman Point, Mumbai - 400021',
+  phone: '+91 98765 43210',
+  email: 'contact@sharma-ca.com',
+  partnerName: 'CA Rajesh Sharma'
+};
+
+export const getFirmProfile = () => getItem('digica_firm_profile', DEFAULT_FIRM_PROFILE);
+export const saveFirmProfile = (profile) => setItem('digica_firm_profile', profile);
+
 export const resetAllData = () => {
   localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
   localStorage.setItem(KEYS.REMOVED_CLIENTS, JSON.stringify(INITIAL_REMOVED_CLIENTS));

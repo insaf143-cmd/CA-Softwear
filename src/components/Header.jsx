@@ -10,7 +10,8 @@ import {
   ChevronDown,
   LogOut,
   Send,
-  GitBranch
+  GitBranch,
+  Edit3
 } from 'lucide-react';
 import { isFirebaseConfigured } from '../config/firebase';
 
@@ -27,6 +28,8 @@ export default function Header({
   onOpenTaxCalc,
   onOpenFirebaseModal,
   onOpenGitHubModal,
+  onOpenFirmSettings,
+  firmProfile,
   onResetData,
   users,
   currentUser,
@@ -54,10 +57,24 @@ export default function Header({
               CA Practice OS
             </span>
           </h1>
-          <p className="text-xs text-slate-400 hidden sm:flex items-center gap-1">
-            <Building2 className="w-3 h-3 text-cyan-400" />
-            M/s. Sharma & Associates, Chartered Accountants
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-xs text-slate-300 hidden sm:flex items-center gap-1 font-semibold truncate max-w-[240px] md:max-w-xs">
+              <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="truncate">{firmProfile?.firmName || 'M/s. Sharma & Associates'}</span>
+              <span className="text-slate-500 font-normal hidden lg:inline">, {firmProfile?.tagline || 'Chartered Accountants'}</span>
+            </p>
+            {isManagerOrAdmin && onOpenFirmSettings && (
+              <button
+                type="button"
+                onClick={onOpenFirmSettings}
+                title="Edit Company / Firm Name & Details"
+                className="p-1 rounded-md text-slate-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors flex items-center gap-1 text-[11px]"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden xl:inline text-[11px] text-cyan-400 font-medium">Edit Firm</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

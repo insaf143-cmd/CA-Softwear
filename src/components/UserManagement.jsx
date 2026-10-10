@@ -16,11 +16,18 @@ import {
   Edit3,
   Trash2,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Building2
 } from 'lucide-react';
 import { clearAllDataAndStartFresh } from '../utils/storage';
 
-export default function UserManagement({ users, setUsers, currentUser, clients }) {
+export default function UserManagement({
+  users,
+  setUsers,
+  currentUser,
+  clients,
+  onOpenFirmSettings
+}) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUserPass, setEditingUserPass] = useState(null);
   const [newPasswordVal, setNewPasswordVal] = useState('');
@@ -197,6 +204,19 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
             >
               <Trash2 className="w-4 h-4 text-red-400" />
               <span>Launch Fresh (Clear All Data)</span>
+            </button>
+          )}
+
+          {/* Edit Company Profile Button */}
+          {onOpenFirmSettings && (isSuperAdmin || isAdmin) && (
+            <button
+              type="button"
+              onClick={onOpenFirmSettings}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition"
+              title="Change Firm Name, Tagline, FRN, GSTIN, and Address"
+            >
+              <Building2 className="w-4 h-4 text-cyan-400" />
+              <span>Edit Company Profile</span>
             </button>
           )}
 

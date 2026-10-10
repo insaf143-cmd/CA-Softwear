@@ -11,7 +11,7 @@ import {
   Calculator
 } from 'lucide-react';
 
-export default function GSTModule({ gstWork, setGstWork, clients }) {
+export default function GSTModule({ gstWork, setGstWork, clients, firmProfile }) {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +33,8 @@ export default function GSTModule({ gstWork, setGstWork, clients }) {
   };
 
   const handleSendWhatsAppAlert = (item) => {
-    const text = `Dear Client (${item.clientName}), GST return ${item.type} for ${item.period} is currently marked as '${item.status}'. Net GST Payable: ₹${item.netLiability.toLocaleString('en-IN')}. Due date is ${item.dueDate}. - M/s Sharma & Associates CAs`;
+    const senderFirm = firmProfile?.firmName || 'M/s Sharma & Associates CAs';
+    const text = `Dear Client (${item.clientName}), GST return ${item.type} for ${item.period} is currently marked as '${item.status}'. Net GST Payable: ₹${item.netLiability.toLocaleString('en-IN')}. Due date is ${item.dueDate}. - ${senderFirm}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
