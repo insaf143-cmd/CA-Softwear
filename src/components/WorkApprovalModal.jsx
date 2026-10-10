@@ -10,7 +10,11 @@ import {
   AlertTriangle,
   History,
   ShieldAlert,
-  Send
+  Send,
+  Paperclip,
+  Download,
+  ExternalLink,
+  File
 } from 'lucide-react';
 
 export default function WorkApprovalModal({
@@ -22,6 +26,15 @@ export default function WorkApprovalModal({
   currentUser
 }) {
   const [activeAction, setActiveAction] = useState('approve'); // 'approve' | 'transfer'
+
+  const handleDownloadFile = (f) => {
+    const a = document.createElement('a');
+    a.href = f.dataUrl;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // Approval Form State
   const [approvalRemarks, setApprovalRemarks] = useState(
@@ -137,6 +150,55 @@ export default function WorkApprovalModal({
               "{work.submissionDetails?.completionRemarks || work.notes || 'Work completed per instructions and submitted for sign-off.'}"
             </p>
           </div>
+
+          {/* Attached Evidence Files */}
+          {((work.submissionDetails?.evidenceFiles?.length || 0) + (work.evidenceFiles?.length || 0) > 0 ||
+            work.submissionDetails?.cloudDriveLink ||
+            work.cloudDriveLink) && (
+            <div className="mt-2 p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2 text-xs">
+              <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                <Paperclip className="w-4 h-4" /> Attached Evidence Documents & Working Papers:
+              </span>
+              <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                {[...(work.evidenceFiles || []), ...(work.submissionDetails?.evidenceFiles || [])].map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-slate-800 border border-slate-700 text-xs"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <File className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span className="text-slate-200 font-medium truncate max-w-[200px]" title={f.name}>
+                        {f.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">({f.size})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadFile(f)}
+                      className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 font-semibold text-[11px] flex items-center gap-1 shrink-0"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Download</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {(work.submissionDetails?.cloudDriveLink || work.cloudDriveLink) && (
+                <div className="pt-1 border-t border-slate-800">
+                  <a
+                    href={work.submissionDetails?.cloudDriveLink || work.cloudDriveLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                  >
+                    <span>Open Working Papers Cloud Drive Link</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Previous Transfer History (if any) */}
           {work.transferHistory && work.transferHistory.length > 0 && (

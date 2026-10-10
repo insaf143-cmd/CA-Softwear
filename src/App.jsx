@@ -255,10 +255,12 @@ export default function App() {
             <ReportsModule
               users={users}
               tasks={tasks}
+              setTasks={setTasks}
               gstWork={gstWork}
               itWork={itWork}
               rocWork={rocWork}
               clients={clients}
+              currentUser={currentUser}
             />
           )}
 

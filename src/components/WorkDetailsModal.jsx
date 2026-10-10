@@ -12,7 +12,11 @@ import {
   History,
   ArrowRight,
   ShieldCheck,
-  Tag
+  Tag,
+  Paperclip,
+  Download,
+  ExternalLink,
+  File
 } from 'lucide-react';
 
 export default function WorkDetailsModal({ work, onClose }) {
@@ -23,6 +27,29 @@ export default function WorkDetailsModal({ work, onClose }) {
   const isTransferred = work.status === 'Transferred';
   const isInProgress = work.status === 'In Progress';
   const isAllocated = work.status === 'Allocated' || work.status === 'Pending' || work.status === 'To Do';
+
+  const allEvidenceFiles = [
+    ...(work.evidenceFiles || []),
+    ...(work.submissionDetails?.evidenceFiles || [])
+  ];
+
+  const cloudLink =
+    work.cloudDriveLink ||
+    work.submissionDetails?.cloudDriveLink ||
+    work.submissionDetails?.evidenceLink;
+
+  const handleDownloadFile = (fileObj) => {
+    if (!fileObj.dataUrl) {
+      alert('File content not available for download.');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = fileObj.dataUrl;
+    link.download = fileObj.name || 'evidence-file';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
@@ -138,6 +165,63 @@ export default function WorkDetailsModal({ work, onClose }) {
             </span>
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 italic leading-relaxed">
               "{work.approvalDetails.approvalRemarks}"
+            </div>
+          </div>
+        )}
+
+        {/* Attached Evidence Files & Documents */}
+        {(allEvidenceFiles.length > 0 || cloudLink) && (
+          <div className="space-y-2 text-xs">
+            <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+              <Paperclip className="w-4 h-4" /> Attached Evidence Documents & Working Papers ({allEvidenceFiles.length}):
+            </span>
+            <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
+              {allEvidenceFiles.length > 0 && (
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                  {allEvidenceFiles.map((f, idx) => (
+                    <div
+                      key={f.id || idx}
+                      className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-700/80 text-xs"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <File className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span className="text-slate-200 font-medium truncate max-w-[220px]" title={f.name}>
+                          {f.name}
+                        </span>
+                        {f.size && <span className="text-[10px] text-slate-400 font-mono">({f.size})</span>}
+                        {f.uploadedBy && (
+                          <span className="text-[10px] text-slate-500">by {f.uploadedBy}</span>
+                        )}
+                      </div>
+                      {f.dataUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadFile(f)}
+                          className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 font-semibold text-[11px] flex items-center gap-1 shrink-0"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Download</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {cloudLink && (
+                <div className="pt-2 border-t border-slate-700/50 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Cloud Drive Storage:</span>
+                  <a
+                    href={cloudLink.startsWith('http') ? cloudLink : `https://${cloudLink}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 underline font-medium truncate max-w-xs"
+                  >
+                    <span>Open Drive Link</span>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}

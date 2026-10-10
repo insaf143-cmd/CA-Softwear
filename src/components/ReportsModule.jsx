@@ -17,15 +17,35 @@ import {
   User,
   CheckCheck,
   TrendingUp,
-  Briefcase
+  Briefcase,
+  Paperclip,
+  UploadCloud,
+  File,
+  X,
+  Trash2,
+  ExternalLink,
+  Link as LinkIcon
 } from 'lucide-react';
 
-export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, clients }) {
-  const [activeReportTab, setActiveReportTab] = useState('worksStatus'); // 'worksStatus' | 'userWise' | 'departmentWise'
-  const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Completed' | 'Progressing' | 'Pending' | 'Transferred' | 'Review'
+export default function ReportsModule({
+  users,
+  tasks,
+  setTasks,
+  gstWork,
+  itWork,
+  rocWork,
+  clients,
+  currentUser
+}) {
+  const [activeReportTab, setActiveReportTab] = useState('worksStatus'); // 'worksStatus' | 'userWise'
+  const [statusFilter, setStatusFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [staffFilter, setStaffFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Evidence Modal State
+  const [managingEvidenceWork, setManagingEvidenceWork] = useState(null);
+  const [newCloudLink, setNewCloudLink] = useState('');
 
   // Work Status Computations
   const completedWorks = tasks.filter((t) => t.status === 'Completed');
@@ -110,6 +130,90 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
     };
   });
 
+  // Handle uploading evidence to a report item
+  const handleUploadEvidenceFiles = (e) => {
+    if (!managingEvidenceWork || !e.target.files) return;
+    const files = Array.from(e.target.files);
+
+    const newFileObjects = [];
+    let processedCount = 0;
+
+    files.forEach((file) => {
+      if (file.size > 8 * 1024 * 1024) {
+        alert(`File "${file.name}" exceeds 8MB. Please use a smaller file or Google Drive link.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileObj = {
+          id: `EVID-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          type: file.type || 'application/octet-stream',
+          dataUrl: reader.result,
+          uploadedAt: new Date().toISOString().split('T')[0],
+          uploadedBy: currentUser ? currentUser.name : 'Auditor'
+        };
+        newFileObjects.push(fileObj);
+        processedCount++;
+
+        if (processedCount === files.length && setTasks) {
+          const updatedTasks = tasks.map((t) => {
+            if (t.id === managingEvidenceWork.id) {
+              const current = t.evidenceFiles || [];
+              const combined = [...current, ...newFileObjects];
+              return { ...t, evidenceFiles: combined };
+            }
+            return t;
+          });
+          setTasks(updatedTasks);
+          const target = updatedTasks.find((t) => t.id === managingEvidenceWork.id);
+          if (target) setManagingEvidenceWork(target);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSaveCloudLink = () => {
+    if (!managingEvidenceWork || !setTasks) return;
+    const updatedTasks = tasks.map((t) => {
+      if (t.id === managingEvidenceWork.id) {
+        return { ...t, cloudDriveLink: newCloudLink.trim() };
+      }
+      return t;
+    });
+    setTasks(updatedTasks);
+    const target = updatedTasks.find((t) => t.id === managingEvidenceWork.id);
+    if (target) setManagingEvidenceWork(target);
+    setNewCloudLink('');
+    alert('Cloud link saved successfully!');
+  };
+
+  const handleRemoveEvidence = (fileId) => {
+    if (!managingEvidenceWork || !setTasks) return;
+    const updatedTasks = tasks.map((t) => {
+      if (t.id === managingEvidenceWork.id) {
+        const current = t.evidenceFiles || [];
+        return { ...t, evidenceFiles: current.filter((f) => f.id !== fileId) };
+      }
+      return t;
+    });
+    setTasks(updatedTasks);
+    const target = updatedTasks.find((t) => t.id === managingEvidenceWork.id);
+    if (target) setManagingEvidenceWork(target);
+  };
+
+  const handleDownloadFile = (f) => {
+    const a = document.createElement('a');
+    a.href = f.dataUrl;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   // Export to CSV Function
   const exportToCSV = () => {
     const headers = [
@@ -121,6 +225,7 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
       'Assigned Staff',
       'Finishing Date',
       'Status',
+      'Evidence Files Count',
       'Remarks'
     ];
 
@@ -134,6 +239,8 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
           ? t.transferHistory?.[0]?.reason || 'Transferred to Department'
           : t.initialRemarks || 'Allocated';
 
+      const evidenceCount = (t.evidenceFiles?.length || 0) + (t.submissionDetails?.evidenceFiles?.length || 0);
+
       return [
         `"${t.id}"`,
         `"${t.title.replace(/"/g, '""')}"`,
@@ -143,6 +250,7 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
         `"${t.assignedToName || t.assignedTo}"`,
         `"${t.finishingDate || t.dueDate}"`,
         `"${t.status}"`,
+        `"${evidenceCount} files"`,
         `"${remark.replace(/"/g, '""')}"`
       ];
     });
@@ -183,7 +291,7 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
             CA Work & Statutory Compliance Reports
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Audit completed works, pending works, progressing works, department transfers, and staff completion rates.
+            Audit completed works, pending works, progressing works, upload evidence proofs, and monitor staff turnaround.
           </p>
         </div>
 
@@ -356,7 +464,6 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
 
             {/* Filter Pills */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Status Selector */}
               <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
                 {['All', 'Completed', 'Progressing', 'Pending', 'Transferred', 'Review'].map(
                   (st) => (
@@ -418,6 +525,7 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
                     <th className="p-3.5">Assigned Staff</th>
                     <th className="p-3.5">Target Finishing Date</th>
                     <th className="p-3.5">Status</th>
+                    <th className="p-3.5">Evidence & Attachments</th>
                     <th className="p-3.5">Remarks / Audit Note</th>
                   </tr>
                 </thead>
@@ -436,6 +544,11 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
                         : isTransferred
                         ? t.transferHistory?.[t.transferHistory.length - 1]?.reason || 'Transferred across departments by Manager.'
                         : t.workDetails || t.initialRemarks || 'Allocated per work mandate.';
+
+                    const allEvidence = [
+                      ...(t.evidenceFiles || []),
+                      ...(t.submissionDetails?.evidenceFiles || [])
+                    ];
 
                     return (
                       <tr key={t.id} className="hover:bg-slate-800/40 transition">
@@ -479,6 +592,28 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
                             {isSubmitted ? 'Under Review' : t.status}
                           </span>
                         </td>
+                        {/* Evidence Upload & Download Action */}
+                        <td className="p-3.5">
+                          <button
+                            onClick={() => {
+                              setManagingEvidenceWork(t);
+                              setNewCloudLink(t.cloudDriveLink || t.submissionDetails?.cloudDriveLink || '');
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition ${
+                              allEvidence.length > 0 || t.cloudDriveLink
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                            }`}
+                            title="Upload or Download Evidence Files"
+                          >
+                            <Paperclip className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>
+                              {allEvidence.length > 0
+                                ? `${allEvidence.length} File${allEvidence.length > 1 ? 's' : ''}`
+                                : '+ Upload Evidence'}
+                            </span>
+                          </button>
+                        </td>
                         <td className="p-3.5 max-w-xs">
                           <p className="text-[11px] text-slate-400 line-clamp-2 italic" title={remark}>
                             "{remark}"
@@ -490,7 +625,7 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
 
                   {filteredWorks.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-slate-500 text-xs">
+                      <td colSpan="8" className="p-8 text-center text-slate-500 text-xs">
                         No work records found matching the selected report filters.
                       </td>
                     </tr>
@@ -572,6 +707,178 @@ export default function ReportsModule({ users, tasks, gstWork, itWork, rocWork, 
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EVIDENCE UPLOAD & DOWNLOAD MODAL */}
+      {managingEvidenceWork && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 md:p-8 space-y-5 shadow-2xl my-8">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Paperclip className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Audit Evidence & Working Paper Attachments
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Upload proofs, download attached files, and link Google Drive working folders.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setManagingEvidenceWork(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Work Assignment Header */}
+            <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-xs space-y-1">
+              <div className="font-bold text-slate-200">{managingEvidenceWork.title}</div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>Client: <strong className="text-slate-300">{managingEvidenceWork.clientName}</strong></span>
+                <span>PAN: <strong className="font-mono text-emerald-400">{managingEvidenceWork.clientPan}</strong></span>
+              </div>
+            </div>
+
+            {/* Existing Uploaded Evidence Files */}
+            <div className="space-y-2 text-xs">
+              <label className="font-bold text-slate-200 block">
+                Attached Evidence Files (
+                {(managingEvidenceWork.evidenceFiles?.length || 0) +
+                  (managingEvidenceWork.submissionDetails?.evidenceFiles?.length || 0)}
+                ):
+              </label>
+
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                {[
+                  ...(managingEvidenceWork.evidenceFiles || []),
+                  ...(managingEvidenceWork.submissionDetails?.evidenceFiles || [])
+                ].map((f) => (
+                  <div
+                    key={f.id}
+                    className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <File className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <div>
+                        <div className="font-medium text-slate-200 truncate max-w-[220px]" title={f.name}>
+                          {f.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {f.size} • Uploaded {f.uploadedAt || 'Recently'} by {f.uploadedBy || 'Staff'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleDownloadFile(f)}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1 transition"
+                        title="Download file"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleRemoveEvidence(f.id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-red-400 transition"
+                        title="Delete file"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {(managingEvidenceWork.evidenceFiles?.length || 0) +
+                  (managingEvidenceWork.submissionDetails?.evidenceFiles?.length || 0) === 0 && (
+                  <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700 text-center text-slate-500 text-xs">
+                    No evidence files uploaded yet. Upload below.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Upload New Files */}
+            <div className="space-y-2 text-xs">
+              <label className="font-bold text-slate-200 flex items-center gap-1.5">
+                <UploadCloud className="w-4 h-4 text-emerald-400" />
+                <span>Upload New Evidence Files directly to this Report</span>
+              </label>
+
+              <label className="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-slate-800/40 hover:bg-slate-800/70 transition text-center">
+                <UploadCloud className="w-7 h-7 text-emerald-400 mb-1" />
+                <span className="text-xs font-bold text-slate-200">
+                  Click here to browse PDF, Excel, Word, or Scanned Images
+                </span>
+                <span className="text-[11px] text-slate-400 mt-0.5">
+                  Files are saved directly to this CA assignment record
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.xlsx,.xls,.doc,.docx,.png,.jpg,.jpeg,.csv,.zip"
+                  onChange={handleUploadEvidenceFiles}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Cloud Drive Link Section */}
+            <div className="space-y-1.5 text-xs">
+              <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Google Drive / Cloud Folder Link</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  value={newCloudLink}
+                  onChange={(e) => setNewCloudLink(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveCloudLink}
+                  className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition shrink-0"
+                >
+                  Save Link
+                </button>
+              </div>
+
+              {managingEvidenceWork.cloudDriveLink && (
+                <div className="pt-1">
+                  <a
+                    href={managingEvidenceWork.cloudDriveLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                  >
+                    <span>Open Linked Working Papers Drive</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 flex justify-end border-t border-slate-800">
+              <button
+                onClick={() => setManagingEvidenceWork(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
