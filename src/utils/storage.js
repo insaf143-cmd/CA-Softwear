@@ -58,17 +58,43 @@ export const saveITWork = (data) => setItem(KEYS.IT, data);
 export const getROCWork = () => getItem(KEYS.ROC, INITIAL_ROC_WORK);
 export const saveROCWork = (data) => setItem(KEYS.ROC, data);
 
-export const getTasks = () => getItem(KEYS.TASKS, INITIAL_TASKS);
+export const getTasks = () => {
+  const tasks = getItem(KEYS.TASKS, INITIAL_TASKS);
+  // If older tasks don't have department or workDetails, load updated INITIAL_TASKS
+  if (!tasks || tasks.length === 0 || !tasks[0].department) {
+    saveTasks(INITIAL_TASKS);
+    return INITIAL_TASKS;
+  }
+  return tasks;
+};
 export const saveTasks = (data) => setItem(KEYS.TASKS, data);
 
 export const getInvoices = () => getItem(KEYS.INVOICES, INITIAL_INVOICES);
 export const saveInvoices = (data) => setItem(KEYS.INVOICES, data);
 
-export const getUsers = () => getItem(KEYS.USERS, INITIAL_USERS);
+export const getUsers = () => {
+  const users = getItem(KEYS.USERS, INITIAL_USERS);
+  // Ensure U2 has role MANAGER if loaded from old cache
+  const updatedUsers = users.map(u => {
+    if (u.id === 'U2' && u.role === 'ADMIN') {
+      return { ...u, role: 'MANAGER' };
+    }
+    return u;
+  });
+  return updatedUsers;
+};
 export const saveUsers = (data) => setItem(KEYS.USERS, data);
 
 export const getCurrentUser = () => getItem(KEYS.CURRENT_USER, INITIAL_USERS[0]); // Default Super Admin
 export const saveCurrentUser = (user) => setItem(KEYS.CURRENT_USER, user);
+
+export const getIsLoggedIn = () => {
+  const saved = localStorage.getItem('digica_logged_in');
+  return saved !== null ? JSON.parse(saved) : true;
+};
+export const saveIsLoggedIn = (val) => {
+  localStorage.setItem('digica_logged_in', JSON.stringify(val));
+};
 
 export const resetAllData = () => {
   localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));

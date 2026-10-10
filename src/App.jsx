@@ -13,9 +13,11 @@ import ComplianceCalendar from './components/ComplianceCalendar';
 import TaxCalculatorModal from './components/TaxCalculatorModal';
 import QuickClientModal from './components/QuickClientModal';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
+import GitHubSyncModal from './components/GitHubSyncModal';
 import UserManagement from './components/UserManagement';
 import ClientRemovalTab from './components/ClientRemovalTab';
 import ReportsModule from './components/ReportsModule';
+import LoginScreen from './components/LoginScreen';
 
 import {
   getClients, saveClients,
@@ -27,6 +29,7 @@ import {
   getInvoices, saveInvoices,
   getUsers, saveUsers,
   getCurrentUser, saveCurrentUser,
+  getIsLoggedIn, saveIsLoggedIn,
   resetAllData
 } from './utils/storage';
 
@@ -39,7 +42,8 @@ import {
 } from './services/firebaseService';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState(getIsLoggedIn);
+  const [activeTab, setActiveTab] = useState('tasks');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Storage & RBAC States
@@ -59,10 +63,23 @@ export default function App() {
   const [showTaxCalcModal, setShowTaxCalcModal] = useState(false);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+  const [showGitHubModal, setShowGitHubModal] = useState(false);
 
   // Sync to Storage
   const setUsers = (data) => { setUsersState(data); saveUsers(data); };
   const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
+
+  const handleLogin = (user) => {
+    setCurrentUserState(user);
+    saveCurrentUser(user);
+    setIsLoggedIn(true);
+    saveIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    saveIsLoggedIn(false);
+  };
 
   const setClients = (data) => { setClientsState(data); saveClients(data); syncClientsToFirebase(data); };
   const setRemovedClients = (data) => { setRemovedClientsState(data); saveRemovedClients(data); };
@@ -90,7 +107,7 @@ export default function App() {
   }, []);
 
   // Filter Data based on Role & Allocation
-  const isNormalUser = currentUser.role === 'NORMAL_USER';
+  const isNormalUser = currentUser?.role === 'NORMAL_USER';
 
   const visibleClients = isNormalUser
     ? clients.filter(c => c.assignedStaff === currentUser.id || (currentUser.allocatedClientIds && currentUser.allocatedClientIds.includes(c.id)))
@@ -144,14 +161,26 @@ export default function App() {
     setRemovedClients(removedClients.filter(r => r.id !== clientId));
   };
 
+  const pendingReviewCount = tasks.filter(
+    t => t.status === 'Submitted for Approval' || t.status === 'Review'
+  ).length;
+
   const counts = {
     clients: visibleClients.length,
     pendingGst: visibleGstWork.filter(g => g.status !== 'Filed').length,
     pendingIt: visibleItWork.filter(i => i.status !== 'Filed' && i.status !== 'Completed').length,
-    openTasks: visibleTasks.filter(t => t.status !== 'Completed').length,
+    openTasks: isNormalUser
+      ? tasks.filter(t => (t.assignedTo === currentUser.id) && t.status !== 'Completed').length
+      : tasks.filter(t => t.status !== 'Completed').length,
+    pendingReviewCount,
     usersCount: users.length,
     removedCount: removedClients.length
   };
+
+  // If user is not logged in, show dedicated Login Screen
+  if (!isLoggedIn || !currentUser) {
+    return <LoginScreen users={users} onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
@@ -162,11 +191,14 @@ export default function App() {
         onOpenNewClient={() => setShowNewClientModal(true)}
         onOpenTaxCalc={() => setShowTaxCalcModal(true)}
         onOpenFirebaseModal={() => setShowFirebaseModal(true)}
+        onOpenGitHubModal={() => setShowGitHubModal(true)}
         onResetData={resetAllData}
         users={users}
         currentUser={currentUser}
         onSwitchUser={handleSwitchUser}
+        onLogout={handleLogout}
         activeTab={activeTab}
+        pendingReviewCount={pendingReviewCount}
       />
 
       {/* Main Workspace Layout */}
@@ -181,7 +213,7 @@ export default function App() {
 
         {/* Mobile Navigation Pills */}
         <div className="md:hidden flex overflow-x-auto bg-slate-900 border-b border-slate-800 p-2 gap-2 fixed bottom-0 left-0 right-0 z-40">
-          {['dashboard', 'clients', 'gst', 'it', 'tasks', 'calendar', 'users', 'removal', 'reports'].map((tab) => (
+          {['tasks', 'dashboard', 'reports', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -189,7 +221,7 @@ export default function App() {
                 activeTab === tab ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
               }`}
             >
-              {tab}
+              {tab === 'tasks' ? 'Work' : tab}
             </button>
           ))}
         </div>
@@ -206,6 +238,27 @@ export default function App() {
               setActiveTab={setActiveTab}
               onOpenNewClient={() => setShowNewClientModal(true)}
               onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+            />
+          )}
+
+          {activeTab === 'tasks' && (
+            <TaskManager
+              tasks={tasks}
+              setTasks={setTasks}
+              clients={visibleClients}
+              staff={users}
+              currentUser={currentUser}
+            />
+          )}
+
+          {activeTab === 'reports' && (
+            <ReportsModule
+              users={users}
+              tasks={tasks}
+              gstWork={gstWork}
+              itWork={itWork}
+              rocWork={rocWork}
+              clients={clients}
             />
           )}
 
@@ -244,16 +297,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'tasks' && (
-            <TaskManager
-              tasks={visibleTasks}
-              setTasks={setTasks}
-              clients={visibleClients}
-              staff={users}
-              currentUser={currentUser}
-            />
-          )}
-
           {activeTab === 'billing' && (
             <BillingModule
               invoices={invoices}
@@ -281,17 +324,6 @@ export default function App() {
               onRestoreClient={handleRestoreClient}
               onPermanentDeleteClient={handlePermanentDeleteClient}
               currentUser={currentUser}
-            />
-          )}
-
-          {activeTab === 'reports' && (
-            <ReportsModule
-              users={users}
-              tasks={tasks}
-              gstWork={gstWork}
-              itWork={itWork}
-              rocWork={rocWork}
-              clients={clients}
             />
           )}
         </main>
@@ -322,6 +354,12 @@ export default function App() {
       {showFirebaseModal && (
         <FirebaseConfigModal
           onClose={() => setShowFirebaseModal(false)}
+        />
+      )}
+
+      {showGitHubModal && (
+        <GitHubSyncModal
+          onClose={() => setShowGitHubModal(false)}
         />
       )}
     </div>

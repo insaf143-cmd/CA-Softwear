@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { ShieldAlert, UserPlus, Users, Lock, Unlock, CheckCircle, Mail, Phone, X, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, UserPlus, Users, Lock, Unlock, CheckCircle, Mail, Phone, X, ShieldCheck, Key, Eye, EyeOff, Edit3 } from 'lucide-react';
 
 export default function UserManagement({ users, setUsers, currentUser, clients }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUserPass, setEditingUserPass] = useState(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [showPass, setShowPass] = useState({});
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'NORMAL_USER',
     designation: 'Article Trainee',
     mobile: '',
@@ -15,11 +20,14 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isAdmin = currentUser.role === 'ADMIN';
 
+  const toggleShowPass = (userId) => {
+    setShowPass(prev => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
   const handleToggleBlockUser = (userId) => {
     const targetUser = users.find(u => u.id === userId);
     if (!targetUser) return;
 
-    // Permissions check
     if (targetUser.role === 'SUPER_ADMIN' && currentUser.id !== targetUser.id) {
       alert('Only Super Admin can modify another Super Admin!');
       return;
@@ -39,11 +47,23 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
     setUsers(updated);
   };
 
+  const handleResetPassword = (e) => {
+    e.preventDefault();
+    if (!newPasswordVal) return;
+
+    const updated = users.map(u => (u.id === editingUserPass.id ? { ...u, password: newPasswordVal } : u));
+    setUsers(updated);
+    setEditingUserPass(null);
+    setNewPasswordVal('');
+    alert(`Password for ${editingUserPass.name} updated successfully!`);
+  };
+
   const handleCreateUser = (e) => {
     e.preventDefault();
     const created = {
       ...newUser,
       id: `U${users.length + 1}`,
+      password: newUser.password || 'UserPass#2026',
       status: 'Active'
     };
     setUsers([...users, created]);
@@ -51,6 +71,7 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
     setNewUser({
       name: '',
       email: '',
+      password: '',
       role: 'NORMAL_USER',
       designation: 'Article Trainee',
       mobile: '',
@@ -75,11 +96,11 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Users className="w-6 h-6 text-amber-400" />
-            User Management & Role Control Center
+            <Key className="w-6 h-6 text-amber-400" />
+            User Passwords & Account Management
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Super Admin & Admin control to create team members, assign client permissions, and block/unblock accounts.
+            Super Admin & Admin control to create users, set system passwords, manage client file allocations, and block/unblock users.
           </p>
         </div>
 
@@ -89,7 +110,7 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-semibold text-xs shadow-lg shadow-amber-950/50 transition"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Create New User</span>
+            <span>Create New User & Set Password</span>
           </button>
         )}
       </div>
@@ -102,8 +123,8 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
               <th>User Name & Designation</th>
               <th>Email & Mobile</th>
               <th>User Role</th>
-              <th>Account Status</th>
-              <th>Allocated Clients Count</th>
+              <th>System Password</th>
+              <th>Allocated Clients</th>
               <th className="text-right">Actions</th>
             </tr>
           </thead>
@@ -135,9 +156,28 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
                   </span>
                 </td>
                 <td>
-                  <span className={`badge ${u.status === 'Active' ? 'badge-filed' : 'badge-urgent'}`}>
-                    {u.status}
-                  </span>
+                  {/* System Password with Show/Hide Toggle */}
+                  <div className="flex items-center gap-2 font-mono text-xs text-slate-200">
+                    <span>{showPass[u.id] ? u.password : '••••••••'}</span>
+                    <button
+                      onClick={() => toggleShowPass(u.id)}
+                      className="text-slate-400 hover:text-amber-400 transition"
+                      title="Show/Hide Password"
+                    >
+                      {showPass[u.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                    {(isSuperAdmin || (isAdmin && u.role === 'NORMAL_USER')) && (
+                      <button
+                        onClick={() => {
+                          setEditingUserPass(u);
+                          setNewPasswordVal(u.password);
+                        }}
+                        className="text-amber-400 hover:text-amber-300 text-[11px] underline ml-1"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <span className="text-xs font-mono font-bold text-emerald-400">
@@ -166,14 +206,14 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
         </table>
       </div>
 
-      {/* Add User Modal */}
+      {/* Add User & Password Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-amber-400" />
-                Add New Staff Member / User
+                Add New Staff Member & Set Password
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -220,6 +260,20 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
                 </div>
 
                 <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Set Password *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="e.g. NehaPass#2026"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-amber-400 font-mono font-bold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="block text-slate-300 font-semibold mb-1">Mobile Phone</label>
                   <input
                     type="text"
@@ -229,25 +283,25 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">User Role Permission</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
-                >
-                  <option value="NORMAL_USER">Normal User (Article Assistant - Restricted to allocated files)</option>
-                  {isSuperAdmin && <option value="ADMIN">Admin (Can assign work & create users)</option>}
-                  {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin (Full system control)</option>}
-                </select>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">User Role</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
+                  >
+                    <option value="NORMAL_USER">Normal User (Article Assistant)</option>
+                    {isSuperAdmin && <option value="ADMIN">Admin</option>}
+                    {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
+                  </select>
+                </div>
               </div>
 
               {/* Allocated Clients Selection */}
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">
-                  Allocate Clients to User (Select files user can access):
+                  Allocate Client Files to User:
                 </label>
                 <div className="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-800/60 rounded-xl border border-slate-700">
                   {clients.map((c) => (
@@ -276,7 +330,54 @@ export default function UserManagement({ users, setUsers, currentUser, clients }
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold shadow-lg"
                 >
-                  Create & Allocate User
+                  Save User & Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {editingUserPass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Key className="w-5 h-5 text-amber-400" />
+                Reset Password for {editingUserPass.name}
+              </h3>
+              <button onClick={() => setEditingUserPass(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">New Password for {editingUserPass.name}</label>
+                <input
+                  type="text"
+                  required
+                  value={newPasswordVal}
+                  onChange={(e) => setNewPasswordVal(e.target.value)}
+                  placeholder="Enter new password..."
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-amber-400 font-mono font-bold focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingUserPass(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold shadow-lg"
+                >
+                  Update Password
                 </button>
               </div>
             </form>

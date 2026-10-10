@@ -18,23 +18,105 @@ import {
 export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }) {
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const isAdmin = currentUser.role === 'ADMIN';
+  const isManager = currentUser.role === 'MANAGER';
   const isNormalUser = currentUser.role === 'NORMAL_USER';
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null, roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'clients', label: 'Client Vault', icon: Users, badge: counts.clients, roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'gst', label: 'GST Compliance', icon: FileCheck, badge: counts.pendingGst ? `${counts.pendingGst} Pending` : null, badgeColor: 'bg-amber-500/20 text-amber-300', roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'it', label: 'Income Tax (ITR)', icon: FileText, badge: counts.pendingIt ? `${counts.pendingIt} Pending` : null, badgeColor: 'bg-blue-500/20 text-blue-300', roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'roc', label: 'ROC & Audit', icon: Building, badge: null, roles: ['SUPER_ADMIN', 'ADMIN'] },
-    { id: 'tasks', label: 'My Assigned Tasks', icon: CheckSquare, badge: counts.openTasks ? `${counts.openTasks} Open` : null, badgeColor: 'bg-emerald-500/20 text-emerald-300', roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'billing', label: 'Billing & Fee Ledger', icon: Receipt, badge: null, roles: ['SUPER_ADMIN', 'ADMIN'] },
-    { id: 'calendar', label: 'Compliance Calendar', icon: Calendar, badge: 'Aug 2026', roles: ['SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'] },
-    { id: 'users', label: 'User & Role Control', icon: UserCheck, badge: counts.usersCount ? `${counts.usersCount}` : null, roles: ['SUPER_ADMIN', 'ADMIN'] },
-    { id: 'removal', label: 'Client Removal Archive', icon: Trash2, badge: counts.removedCount ? `${counts.removedCount}` : null, badgeColor: 'bg-red-500/20 text-red-300', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    { id: 'reports', label: 'Performance & Reports', icon: BarChart3, badge: null, roles: ['SUPER_ADMIN', 'ADMIN'] }
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      badge: null,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'tasks',
+      label: isNormalUser ? 'My Allocated Work' : 'Work Allocation & Flow',
+      icon: CheckSquare,
+      badge:
+        counts.pendingReviewCount && (isManager || isAdmin || isSuperAdmin)
+          ? `${counts.pendingReviewCount} Reviews`
+          : counts.openTasks
+          ? `${counts.openTasks} Active`
+          : null,
+      badgeColor:
+        counts.pendingReviewCount && (isManager || isAdmin || isSuperAdmin)
+          ? 'bg-purple-500/20 text-purple-300 font-bold animate-pulse'
+          : 'bg-emerald-500/20 text-emerald-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'reports',
+      label: 'Practice Reports',
+      icon: BarChart3,
+      badge: 'Live',
+      badgeColor: 'bg-emerald-500/10 text-emerald-400',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
+    },
+    {
+      id: 'clients',
+      label: isNormalUser ? 'My Client Files' : 'Client Vault',
+      icon: Users,
+      badge: counts.clients,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'gst',
+      label: 'GST Compliance',
+      icon: FileCheck,
+      badge: counts.pendingGst ? `${counts.pendingGst} Pending` : null,
+      badgeColor: 'bg-amber-500/20 text-amber-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'it',
+      label: 'Income Tax (ITR)',
+      icon: FileText,
+      badge: counts.pendingIt ? `${counts.pendingIt} Pending` : null,
+      badgeColor: 'bg-blue-500/20 text-blue-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'roc',
+      label: 'ROC & Audit',
+      icon: Building,
+      badge: null,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
+    },
+    {
+      id: 'billing',
+      label: 'Billing & Fee Ledger',
+      icon: Receipt,
+      badge: null,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
+    },
+    {
+      id: 'calendar',
+      label: 'Compliance Calendar',
+      icon: Calendar,
+      badge: 'Aug 2026',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER']
+    },
+    {
+      id: 'users',
+      label: 'Staff & Role Control',
+      icon: UserCheck,
+      badge: counts.usersCount ? `${counts.usersCount}` : null,
+      roles: ['SUPER_ADMIN', 'ADMIN']
+    },
+    {
+      id: 'removal',
+      label: 'Client Removal Archive',
+      icon: Trash2,
+      badge: counts.removedCount ? `${counts.removedCount}` : null,
+      badgeColor: 'bg-red-500/20 text-red-300',
+      roles: ['SUPER_ADMIN', 'ADMIN']
+    }
   ];
 
-  const visibleNavItems = navItems.filter(item => item.roles.includes(currentUser.role));
+  const visibleNavItems = navItems.filter((item) =>
+    item.roles.includes(currentUser.role)
+  );
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 hidden md:flex">
@@ -44,12 +126,22 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }
             <Layers className="w-3.5 h-3.5" />
             <span>Modules</span>
           </span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-            isSuperAdmin ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-            isAdmin ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-            'bg-slate-800 text-slate-400'
-          }`}>
-            {currentUser.role}
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+              isSuperAdmin
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                : isAdmin
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                : isManager
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            {currentUser.role === 'SUPER_ADMIN'
+              ? 'Admin'
+              : currentUser.role === 'NORMAL_USER'
+              ? 'Staff'
+              : currentUser.role}
           </span>
         </div>
 
@@ -71,7 +163,11 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser }
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                    item.badgeColor || 'bg-slate-800 text-slate-300'
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}
