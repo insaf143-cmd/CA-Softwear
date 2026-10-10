@@ -23,10 +23,12 @@ export default function LoginScreen({ users, onLogin }) {
     e.preventDefault();
     setErrorMsg('');
 
+    const identifier = email.trim().toLowerCase();
     const targetUser = users.find(
       (u) =>
-        (u.email.toLowerCase() === email.trim().toLowerCase() ||
-          u.name.toLowerCase() === email.trim().toLowerCase()) &&
+        (u.id?.toLowerCase() === identifier ||
+          u.email?.toLowerCase() === identifier ||
+          u.name?.toLowerCase() === identifier) &&
         (u.password === password || password === 'admin' || password === '123456')
     );
 
@@ -37,16 +39,17 @@ export default function LoginScreen({ users, onLogin }) {
       }
       onLogin(targetUser);
     } else {
-      // If user matched email but password was wrong
+      // If user matched User ID or email but password was wrong
       const userExists = users.find(
         (u) =>
-          u.email.toLowerCase() === email.trim().toLowerCase() ||
-          u.name.toLowerCase() === email.trim().toLowerCase()
+          u.id?.toLowerCase() === identifier ||
+          u.email?.toLowerCase() === identifier ||
+          u.name?.toLowerCase() === identifier
       );
       if (userExists) {
-        setErrorMsg('Invalid password entered. Please try again or use Quick Select below.');
+        setErrorMsg('Invalid password entered. Please try again or use Quick Select.');
       } else {
-        setErrorMsg('User not found. Please enter a valid registered CA firm email or select below.');
+        setErrorMsg('User not found. Please enter a valid registered User ID or Email.');
       }
     }
   };
@@ -100,16 +103,18 @@ export default function LoginScreen({ users, onLogin }) {
 
               <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Email / Username</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    User ID or Email <span className="text-emerald-400">*</span>
+                  </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
                       type="text"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. rajesh@cadesk.in or rohan.art@cadesk.in"
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                      placeholder="e.g. ADMIN01, ROHAN, or rajesh@cadesk.in"
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                     />
                   </div>
                 </div>
@@ -189,11 +194,15 @@ export default function LoginScreen({ users, onLogin }) {
                         {u.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300 transition">
-                          {u.name}
+                        <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300 transition flex items-center gap-1.5">
+                          <span>{u.name}</span>
+                          <span className="font-mono text-[10px] text-emerald-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-semibold">
+                            ID: {u.id}
+                          </span>
                         </div>
-                        <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                        <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                           <span>{u.designation}</span>
+                          <span className="text-slate-500 font-mono text-[10px]">Key: {u.password}</span>
                         </div>
                       </div>
                     </div>

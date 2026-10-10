@@ -60,8 +60,9 @@ export const saveROCWork = (data) => setItem(KEYS.ROC, data);
 
 export const getTasks = () => {
   const tasks = getItem(KEYS.TASKS, INITIAL_TASKS);
-  // If older tasks don't have department or workDetails, load updated INITIAL_TASKS
-  if (!tasks || tasks.length === 0 || !tasks[0].department) {
+  if (!tasks) return [];
+  // Migrate only if legacy tasks exist without department field
+  if (tasks.length > 0 && !tasks[0].department) {
     saveTasks(INITIAL_TASKS);
     return INITIAL_TASKS;
   }
@@ -74,6 +75,7 @@ export const saveInvoices = (data) => setItem(KEYS.INVOICES, data);
 
 export const getUsers = () => {
   const users = getItem(KEYS.USERS, INITIAL_USERS);
+  if (!users || users.length === 0) return [INITIAL_USERS[0]];
   // Ensure U2 has role MANAGER if loaded from old cache
   const updatedUsers = users.map(u => {
     if (u.id === 'U2' && u.role === 'ADMIN') {
@@ -96,6 +98,32 @@ export const saveIsLoggedIn = (val) => {
   localStorage.setItem('digica_logged_in', JSON.stringify(val));
 };
 
+export const clearAllDataAndStartFresh = () => {
+  const masterAdmin = {
+    id: 'ADMIN01',
+    name: 'Admin User',
+    email: 'admin@cadesk.in',
+    password: 'admin',
+    role: 'SUPER_ADMIN',
+    status: 'Active',
+    designation: 'Managing Partner / Admin',
+    mobile: '+91 99999 00000',
+    allocatedClientIds: []
+  };
+
+  localStorage.setItem(KEYS.CLIENTS, JSON.stringify([]));
+  localStorage.setItem(KEYS.REMOVED_CLIENTS, JSON.stringify([]));
+  localStorage.setItem(KEYS.GST, JSON.stringify([]));
+  localStorage.setItem(KEYS.IT, JSON.stringify([]));
+  localStorage.setItem(KEYS.ROC, JSON.stringify([]));
+  localStorage.setItem(KEYS.TASKS, JSON.stringify([]));
+  localStorage.setItem(KEYS.INVOICES, JSON.stringify([]));
+  localStorage.setItem(KEYS.USERS, JSON.stringify([masterAdmin]));
+  localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(masterAdmin));
+  localStorage.setItem('digica_logged_in', JSON.stringify(true));
+  window.location.reload();
+};
+
 export const resetAllData = () => {
   localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
   localStorage.setItem(KEYS.REMOVED_CLIENTS, JSON.stringify(INITIAL_REMOVED_CLIENTS));
@@ -106,5 +134,6 @@ export const resetAllData = () => {
   localStorage.setItem(KEYS.INVOICES, JSON.stringify(INITIAL_INVOICES));
   localStorage.setItem(KEYS.USERS, JSON.stringify(INITIAL_USERS));
   localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
+  localStorage.setItem('digica_logged_in', JSON.stringify(true));
   window.location.reload();
 };
