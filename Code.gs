@@ -55,6 +55,52 @@ function include(filename) {
 }
 
 
+
+/**
+ * Universal Database Connection:
+ * Works seamlessly whether container-bound (inside Sheet) or standalone.
+ * If standalone, automatically creates 'CA Practice & Task Management System'
+ * in the user\'s Google Drive and connects to it automatically.
+ */
+function getDatabaseSpreadsheet() {
+  let ss = null;
+  try {
+    ss = getDatabaseSpreadsheet();
+  } catch (e) {}
+
+  if (ss) return ss;
+
+  const props = PropertiesService.getScriptProperties();
+  const savedId = props.getProperty('DATABASE_SPREADSHEET_ID');
+  if (savedId) {
+    try {
+      ss = SpreadsheetApp.openById(savedId);
+      if (ss) return ss;
+    } catch (e) {}
+  }
+
+  // Look for existing sheet in Drive
+  try {
+    const files = DriveApp.getFilesByName('CA Practice & Task Management System');
+    if (files.hasNext()) {
+      const file = files.next();
+      ss = SpreadsheetApp.openById(file.getId());
+      props.setProperty('DATABASE_SPREADSHEET_ID', ss.getId());
+      return ss;
+    }
+  } catch (e) {}
+
+  // Create new Google Sheet automatically in Google Drive
+  try {
+    ss = SpreadsheetApp.create('CA Practice & Task Management System');
+    props.setProperty('DATABASE_SPREADSHEET_ID', ss.getId());
+    setupDatabase();
+    return ss;
+  } catch (err) {
+    throw new Error('Database Connection Error: ' + err.message);
+  }
+}
+
 // --- GLOBAL CONFIGURATION & CONSTANTS ---
 const APP_TITLE = "CA Practice & Task Management System";
 const ROOT_DRIVE_FOLDER_NAME = "CA Practice Management Files";
@@ -178,7 +224,7 @@ function showWebAppUrl() {
  * Creates and formats all sheets with professional styling, validations, and sample data.
  */
 function setupDatabase() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
 
   // Create or retrieve sheets
   const sheetUsers = getOrCreateSheet(ss, SHEETS.USERS);
@@ -390,7 +436,7 @@ function seedInitialTasks(sheet) {
  * All staff members must use the Web App, preventing confidential data leakage.
  */
 function lockSheetsForRBAC() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const owner = ss.getOwner();
   const me = Session.getEffectiveUser().getEmail();
   
@@ -443,7 +489,7 @@ function getCurrentUserContext() {
   // Default fallback if activeEmail is blank in certain test environments
   const emailToLookup = activeEmail || effectiveEmail || SUPER_ADMIN_FALLBACK_EMAIL;
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetUsers = ss.getSheetByName(SHEETS.USERS);
 
   // If DB_Users does not exist or has no data, treat as Super_Admin for initial setup
@@ -547,7 +593,7 @@ function getTasks(filters) {
   const user = getCurrentUserContext();
   if (!user.isAuthenticated) throw new Error("Unauthorized access.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   if (!sheetTasks || sheetTasks.getLastRow() <= 1) return [];
 
@@ -620,7 +666,7 @@ function createTask(taskData) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Only Partners, Managers, and Super Admin can allocate tasks.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   
   const taskId = generateUniqueId("TSK", sheetTasks);
@@ -685,7 +731,7 @@ function bulkCreateTasks(bulkData) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Only Partners, Managers, and Super Admin can bulk allocate tasks.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   
   const clientList = bulkData.clients || []; // array of { client_id, client_name }
@@ -755,7 +801,7 @@ function reassignTask(taskId, newAssigneeEmail, reason) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Only Partners/Managers and Super Admin can reassign tasks.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   const data = sheetTasks.getDataRange().getValues();
 
@@ -819,7 +865,7 @@ function updateTaskStatus(taskId, newStatus, workNotes, filingAckNo, fileDataLis
   const user = getCurrentUserContext();
   if (!user.isAuthenticated) throw new Error("Unauthorized.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   const data = sheetTasks.getDataRange().getValues();
 
@@ -917,7 +963,7 @@ function partnerReviewTask(taskId, reviewAction, remarks) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Only Partners/Managers and Super Admin can review tasks.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   const data = sheetTasks.getDataRange().getValues();
 
@@ -971,7 +1017,7 @@ function getClients() {
   const user = getCurrentUserContext();
   if (!user.isAuthenticated) throw new Error("Unauthorized.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetClients = ss.getSheetByName(SHEETS.CLIENTS);
   if (!sheetClients || sheetClients.getLastRow() <= 1) return [];
 
@@ -1022,7 +1068,7 @@ function saveClient(clientData) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Confidential: Only Partners and Super Admin can manage clients.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetClients = ss.getSheetByName(SHEETS.CLIENTS);
   const data = sheetClients.getDataRange().getValues();
 
@@ -1077,7 +1123,7 @@ function getUsers() {
   const user = getCurrentUserContext();
   if (!user.isAuthenticated) throw new Error("Unauthorized.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetUsers = ss.getSheetByName(SHEETS.USERS);
   if (!sheetUsers || sheetUsers.getLastRow() <= 1) return [];
 
@@ -1107,7 +1153,7 @@ function saveUser(userData) {
   const user = getCurrentUserContext();
   if (!user.isSuperAdmin) throw new Error("Security Alert: Only Managing Partner (Super Admin) can manage firm users.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetUsers = ss.getSheetByName(SHEETS.USERS);
   const data = sheetUsers.getDataRange().getValues();
 
@@ -1156,7 +1202,7 @@ function getKPIDashboardData() {
   const user = getCurrentUserContext();
   if (!user.isAuthenticated) throw new Error("Unauthorized.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   const sheetUsers = ss.getSheetByName(SHEETS.USERS);
 
@@ -1367,7 +1413,7 @@ function uploadTaskFile(taskId, clientName, base64Data, fileName, mimeType) {
   const file = folder.createFile(blob);
   
   // Update task Drive link if empty
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetTasks = ss.getSheetByName(SHEETS.TASKS);
   const data = sheetTasks.getDataRange().getValues();
 
@@ -1400,7 +1446,7 @@ function uploadTaskFile(taskId, clientName, base64Data, fileName, mimeType) {
  */
 function logActivity(taskId, actionType, prevVal, newVal) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getDatabaseSpreadsheet();
     const sheetLogs = ss.getSheetByName(SHEETS.LOGS);
     if (!sheetLogs) return;
 
@@ -1429,7 +1475,7 @@ function getActivityLogs(limit) {
   const user = getCurrentUserContext();
   if (!user.isAdmin) throw new Error("Only Partners/Managers and Super Admin can view audit logs.");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getDatabaseSpreadsheet();
   const sheetLogs = ss.getSheetByName(SHEETS.LOGS);
   if (!sheetLogs || sheetLogs.getLastRow() <= 1) return [];
 
