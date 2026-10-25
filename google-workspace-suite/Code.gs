@@ -102,11 +102,39 @@ const CA_SERVICES_TAXONOMY = {
  * Serves the HTML Web App UI
  */
 function doGet(e) {
-  const template = HtmlService.createTemplateFromFile("Index");
-  return template.evaluate()
-    .setTitle(APP_TITLE)
-    .addMetaTag("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  try {
+    let template;
+    try {
+      template = HtmlService.createTemplateFromFile("Index");
+    } catch (e1) {
+      try {
+        template = HtmlService.createTemplateFromFile("Index.html");
+      } catch (e2) {
+        throw new Error("Could not find 'Index' HTML file in the Apps Script project. Please ensure you created an HTML file named 'Index' in Apps Script.");
+      }
+    }
+    return template.evaluate()
+      .setTitle(APP_TITLE || "CA Practice & Task Management System")
+      .addMetaTag("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch (err) {
+    return HtmlService.createHtmlOutput(
+      "<div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;padding:32px;max-width:640px;margin:50px auto;border:1px solid #cbd5e1;border-radius:12px;background:#ffffff;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);'>" +
+      "<h2 style='color:#1e3a8a;margin-top:0;display:flex;align-items:center;gap:10px;'>⚖️ CA Practice Management System</h2>" +
+      "<div style='background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:6px;margin:20px 0;color:#991b1b;font-size:14px;'>" +
+      "<strong>Initialization Notice:</strong> " + err.message +
+      "</div>" +
+      "<h4 style='color:#334155;margin-bottom:8px;'>How to Resolve in Apps Script:</h4>" +
+      "<ol style='color:#475569;font-size:13px;line-height:1.8;padding-left:20px;'>" +
+      "<li>In the Apps Script editor left panel, verify that a file named <strong>Index.html</strong> exists under <em>Files</em>.</li>" +
+      "<li>If missing, click the <strong>+</strong> button next to Files &gt; select <strong>HTML</strong> &gt; enter <strong>Index</strong>.</li>" +
+      "<li>Paste the complete contents of <code>Index.html</code> into it.</li>" +
+      "<li>Click <strong>Save (Ctrl + S)</strong>.</li>" +
+      "<li>Go to <strong>Deploy &gt; Manage deployments &gt; Edit (pencil icon) &gt; Select 'New version' &gt; Deploy</strong>.</li>" +
+      "</ol>" +
+      "</div>"
+    );
+  }
 }
 
 /**
