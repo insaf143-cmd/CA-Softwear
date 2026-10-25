@@ -1,0 +1,42 @@
+name: Deploy to Google Apps Script & Google Sheets
+
+on:
+  push:
+    branches:
+      - main
+      - office-management-suite
+    paths:
+      - 'Code.gs'
+      - 'Index.html'
+      - 'appsscript.json'
+      - 'google-workspace-suite/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Google Clasp
+        run: sudo npm install -g @google/clasp
+
+      - name: Configure Clasp Authentication & Push
+        if: env.CLASPRC_JSON != ''
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+        run: |
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+          if [ -d "google-workspace-suite" ]; then
+            cd google-workspace-suite
+          fi
+          if [ -n "$CLASP_SCRIPT_ID" ]; then
+            echo "{\"scriptId\":\"$CLASP_SCRIPT_ID\",\"rootDir\":\".\"}" > .clasp.json
+          fi
+          clasp push -f

@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CA Practice & Task Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            ca: {
+              navy: '#1E3A8A',
+              navyDark: '#0F172A',
+              blue: '#2563EB',
+              accent: '#3B82F6',
+              gold: '#D97706',
+              emerald: '#059669',
+              rose: '#E11D48'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .badge-urgent { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-high { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+    .badge-medium { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-low { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    .status-pending { background-color: #f1f5f9; color: #334155; }
+    .status-inprogress { background-color: #dbeafe; color: #1e40af; }
+    .status-review { background-color: #f3e8ff; color: #6b21a8; }
+    .status-completed { background-color: #dcfce7; color: #166534; }
+    .status-onhold { background-color: #fee2e2; color: #991b1b; }
+
+    .kanban-col { min-height: 520px; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="bg-ca-navy text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Brand & Firm Identity -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-amber-400 font-bold text-xl border border-white/20">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-2">
+              CA PRACTICE MANAGEMENT
+              <span class="text-xs bg-amber-500/20 text-amber-300 font-medium px-2 py-0.5 rounded border border-amber-400/30">PRO</span>
+            </h1>
+            <p class="text-xs text-blue-200">Chartered Accountancy Practice & Compliance Suite</p>
+          </div>
+        </div>
+
+        <!-- Global Search & Actions -->
+        <div class="flex items-center space-x-4">
+          <!-- Refresh Data Button -->
+          <button onclick="refreshCurrentView()" title="Refresh System Data" class="p-2 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition">
+            <i class="fa-solid fa-rotate text-sm" id="refresh-icon"></i>
+          </button>
+
+          <!-- Current User Profile Pill -->
+          <div class="flex items-center bg-white/10 rounded-full py-1 px-3 border border-white/15">
+            <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold mr-2" id="user-avatar">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="text-left mr-2">
+              <div class="text-xs font-semibold text-white leading-tight" id="user-display-name">Loading user...</div>
+              <div class="text-[10px] text-blue-200 leading-none" id="user-display-role">Authenticating...</div>
+            </div>
+            <span id="role-badge" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-blue-500/40 text-blue-100 border border-blue-400/40">
+              ...
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= SECONDARY NAVIGATION (TABS) ================= -->
+  <nav class="bg-white border-b border-slate-200 sticky top-16 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2" id="nav-tabs-container">
+        
+        <!-- Staff & Admin Common Tab -->
+        <button onclick="switchTab('workspace')" id="tab-workspace" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-ca-blue bg-blue-50 border border-blue-200">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>My Workspace</span>
+          <span id="my-tasks-count" class="ml-1 text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">0</span>
+        </button>
+
+        <!-- Admin / Partner / Super Admin Tabs (Hidden for Staff) -->
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>KPI Analytics</span>
+        </button>
+
+        <button onclick="switchTab('alltasks')" id="tab-alltasks" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Firm Tasks</span>
+        </button>
+
+        <button onclick="switchTab('assign')" id="tab-assign" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>Assign Task</span>
+        </button>
+
+        <button onclick="switchTab('bulk')" id="tab-bulk" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Bulk Allocation</span>
+        </button>
+
+        <button onclick="switchTab('reassign')" id="tab-reassign" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          <span>Reassign</span>
+        </button>
+
+        <button onclick="switchTab('clients')" id="tab-clients" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-building-user"></i>
+          <span>Client Master</span>
+        </button>
+
+        <!-- Super Admin Only Tabs -->
+        <button onclick="switchTab('users')" id="tab-users" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Team / Users</span>
+        </button>
+
+        <button onclick="switchTab('logs')" id="tab-logs" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Audit Log</span>
+        </button>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN CONTENT WRAPPER ================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+    <!-- Loading Indicator Banner -->
+    <div id="global-loader" class="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center gap-3 shadow-sm">
+      <i class="fa-solid fa-spinner fa-spin text-lg text-blue-600"></i>
+      <div class="text-sm">
+        <span class="font-semibold" id="loader-message">Connecting to CA Practice Database...</span>
+        <span class="text-xs text-blue-500 block">Synchronizing compliance schedules and active engagements</span>
+      </div>
+    </div>
+
+    <!-- Alert Banner / Toasts Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 1: MY WORKSPACE (FOR ALL USERS: ARTICLES, MANAGERS, PARTNERS) -->
+    <!-- ============================================================== -->
+    <section id="view-workspace" class="tab-view">
+      
+      <!-- Top Action Bar for Workspace -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">My Compliance Workspace</h2>
+          <p class="text-xs text-slate-500">Track and execute your assigned tax returns, audit schedules, and filings</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- View Toggle: Kanban vs Table -->
+          <div class="bg-slate-100 p-1 rounded-lg flex items-center text-xs font-semibold text-slate-600 border border-slate-200">
+            <button onclick="setWorkspaceLayout('kanban')" id="btn-layout-kanban" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-table-columns"></i> Kanban
+            </button>
+            <button onclick="setWorkspaceLayout('table')" id="btn-layout-table" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-table-list"></i> Table
+            </button>
+          </div>
+
+          <!-- Fast Filter by Status -->
+          <select id="ws-filter-status" onchange="renderMyWorkspace()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="All">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Review Required">Review Required</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <!-- Search Input -->
+          <div class="relative">
+            <input type="text" id="ws-search" oninput="renderMyWorkspace()" placeholder="Search client or task..." class="text-xs bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-2 text-slate-700 w-48 sm:w-64 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-2.5 top-2.5 text-xs"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- KANBAN BOARD CONTAINER -->
+      <div id="ws-kanban-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- Column 1: Pending -->
+        <div class="bg-slate-100/80 rounded-xl p-3 border border-slate-200/80 kanban-col flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+              <span class="font-semibold text-xs uppercase tracking-wider text-slate-600">Pending</span>
+            </div>
+            <span id="col-count-pending" class="text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded-full border border-slate-200">0</span>
+          </div>
+          <div id="kanban-cards-pending" class="space-y-3 flex-grow overflow-y-auto max-h-[70vh]"></div>
+        </div>
+
+        <!-- Column 2: In Progress -->
+        <div class="bg-blue-50/50 rounded-xl p-3 border border-blue-100 kanban-col flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-blue-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span class="font-semibold text-xs uppercase tracking-wider text-blue-800">In Progress</span>
+            </div>
+            <span id="col-count-inprogress" class="text-xs font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200">0</span>
+          </div>
+          <div id="kanban-cards-inprogress" class="space-y-3 flex-grow overflow-y-auto max-h-[70vh]"></div>
+        </div>
+
+        <!-- Column 3: Review Required -->
+        <div class="bg-purple-50/50 rounded-xl p-3 border border-purple-100 kanban-col flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-purple-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+              <span class="font-semibold text-xs uppercase tracking-wider text-purple-800">Review Required</span>
+            </div>
+            <span id="col-count-review" class="text-xs font-bold text-purple-700 bg-white px-2 py-0.5 rounded-full border border-purple-200">0</span>
+          </div>
+          <div id="kanban-cards-review" class="space-y-3 flex-grow overflow-y-auto max-h-[70vh]"></div>
+        </div>
+
+        <!-- Column 4: Completed -->
+        <div class="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100 kanban-col flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-emerald-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="font-semibold text-xs uppercase tracking-wider text-emerald-800">Completed</span>
+            </div>
+            <span id="col-count-completed" class="text-xs font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">0</span>
+          </div>
+          <div id="kanban-cards-completed" class="space-y-3 flex-grow overflow-y-auto max-h-[70vh]"></div>
+        </div>
+
+      </div>
+
+      <!-- TABLE VIEW CONTAINER (HIDDEN INITIALLY) -->
+      <div id="ws-table-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+              <tr>
+                <th class="px-4 py-3">Task ID</th>
+                <th class="px-4 py-3">Client & Entity</th>
+                <th class="px-4 py-3">Category & Sub-Task</th>
+                <th class="px-4 py-3">Period / FY</th>
+                <th class="px-4 py-3">Statutory Due</th>
+                <th class="px-4 py-3">Priority</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ws-table-body" class="divide-y divide-slate-200 font-normal text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: KPI & FIRM ANALYTICS DASHBOARD (PARTNERS & SUPER ADMIN) -->
+    <!-- ============================================================== -->
+    <section id="view-dashboard" class="tab-view hidden">
+      
+      <!-- Key KPI Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        
+        <!-- Overdue Tasks -->
+        <div class="bg-white p-5 rounded-xl border border-red-200 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-red-600 uppercase tracking-wider">Overdue Compliance</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="kpi-overdue">0</h3>
+            <p class="text-[11px] text-red-500 mt-1 flex items-center gap-1">
+              <i class="fa-solid fa-triangle-exclamation"></i> Passed statutory date
+            </p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xl border border-red-100">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+        </div>
+
+        <!-- Due This Week -->
+        <div class="bg-white p-5 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Due in 7 Days</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="kpi-due-week">0</h3>
+            <p class="text-[11px] text-amber-500 mt-1 flex items-center gap-1">
+              <i class="fa-solid fa-calendar-week"></i> Immediate priority
+            </p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+        </div>
+
+        <!-- Pending Partner Review -->
+        <div class="bg-white p-5 rounded-xl border border-purple-200 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-purple-600 uppercase tracking-wider">Pending Review</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="kpi-review">0</h3>
+            <p class="text-[11px] text-purple-500 mt-1 flex items-center gap-1">
+              <i class="fa-solid fa-stamp"></i> Awaiting Partner sign-off
+            </p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl border border-purple-100">
+            <i class="fa-solid fa-signature"></i>
+          </div>
+        </div>
+
+        <!-- Completed Today / Month -->
+        <div class="bg-white p-5 rounded-xl border border-emerald-200 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Completed Deliveries</p>
+            <h3 class="text-2xl font-bold text-slate-900 mt-1" id="kpi-completed">0</h3>
+            <p class="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i> <span id="kpi-completed-today">0</span> completed today
+            </p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl border border-emerald-100">
+            <i class="fa-solid fa-award"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Compliance Breakdown & Workload Table -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        
+        <!-- Practice Categories Distribution -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-chart-simple text-blue-600"></i> Practice Area Distribution
+            </h3>
+            <div class="space-y-3" id="kpi-category-bars">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+          <div class="pt-4 border-t border-slate-100 mt-4 text-[11px] text-slate-500">
+            Real-time breakdown of open engagements across tax, audit, and MCA filings.
+          </div>
+        </div>
+
+        <!-- Staff Workload & Performance Scorecard (TAT & Adherence) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-users text-blue-600"></i> Team Workload & KPI Scorecard
+            </h3>
+            <span class="text-xs text-slate-500">TAT (Turnaround Time) & Statutory Adherence</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+                <tr>
+                  <th class="px-3 py-2">Team Member</th>
+                  <th class="px-3 py-2 text-center">Active Tasks</th>
+                  <th class="px-3 py-2 text-center">In Review</th>
+                  <th class="px-3 py-2 text-center">Overdue</th>
+                  <th class="px-3 py-2 text-center">Avg TAT</th>
+                  <th class="px-3 py-2 text-center">Statutory On-Time</th>
+                </tr>
+              </thead>
+              <tbody id="kpi-staff-table-body" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 3: ALL FIRM TASKS (PARTNERS / SUPER ADMIN) -->
+    <!-- ============================================================== -->
+    <section id="view-alltasks" class="tab-view hidden">
+      
+      <!-- Top Filters -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Firm-Wide Compliance Master</h2>
+          <p class="text-xs text-slate-500">Centralized tracking of all client filings across direct tax, audit, and ROC</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <select id="all-filter-category" onchange="renderAllFirmTasks()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700">
+            <option value="All">All Categories</option>
+            <option value="Direct Tax">Direct Tax</option>
+            <option value="Indirect Tax">Indirect Tax</option>
+            <option value="Corporate / MCA">Corporate / MCA</option>
+            <option value="Audit & Assurance">Audit & Assurance</option>
+            <option value="Accounting & Advisory">Accounting & Advisory</option>
+          </select>
+
+          <select id="all-filter-status" onchange="renderAllFirmTasks()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700">
+            <option value="All">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Review Required">Review Required</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <select id="all-filter-assignee" onchange="renderAllFirmTasks()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700">
+            <option value="All">All Staff / Assignees</option>
+          </select>
+
+          <input type="text" id="all-search" oninput="renderAllFirmTasks()" placeholder="Search client, task, ID..." class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 w-48 sm:w-60">
+        </div>
+      </div>
+
+      <!-- All Tasks Table -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+              <tr>
+                <th class="px-4 py-3">Task ID</th>
+                <th class="px-4 py-3">Client Name</th>
+                <th class="px-4 py-3">Category & Sub-Task</th>
+                <th class="px-4 py-3">Period</th>
+                <th class="px-4 py-3">Statutory Date</th>
+                <th class="px-4 py-3">Assignee</th>
+                <th class="px-4 py-3">Priority</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-tasks-table-body" class="divide-y divide-slate-200 font-normal text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 4: SINGLE TASK ASSIGNMENT -->
+    <!-- ============================================================== -->
+    <section id="view-assign" class="tab-view hidden">
+      <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+        <div class="border-b border-slate-200 pb-4 mb-6">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-file-circle-plus text-ca-navy"></i> Assign New Compliance Task
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Delegate statutory filings, audit engagements, or advisory tasks to firm members</p>
+        </div>
+
+        <form id="form-single-task" onsubmit="handleCreateSingleTask(event)" class="space-y-5">
+          
+          <!-- Client Selection -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Client Entity *</label>
+            <select id="assign-client-id" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-1 focus:ring-blue-500">
+              <option value="">-- Select Client (Searchable by PAN / Trade Name) --</option>
+            </select>
+          </div>
+
+          <!-- Service Category & Dynamic Sub-Task -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Service Category *</label>
+              <select id="assign-service-cat" onchange="onCategoryChange()" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-1 focus:ring-blue-500">
+                <option value="">-- Select Category --</option>
+                <option value="Direct Tax">Direct Tax</option>
+                <option value="Indirect Tax">Indirect Tax</option>
+                <option value="Corporate / MCA">Corporate / MCA</option>
+                <option value="Audit & Assurance">Audit & Assurance</option>
+                <option value="Accounting & Advisory">Accounting & Advisory</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Compliance / Sub-Task *</label>
+              <select id="assign-sub-task" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-1 focus:ring-blue-500">
+                <option value="">-- Select Category First --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Financial Year & Return Period / Assessment Year -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Financial Year (FY)</label>
+              <input type="text" id="assign-fy" placeholder="e.g. FY 2024-25" value="FY 2024-25" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Period / Assessment Year (AY)</label>
+              <input type="text" id="assign-period" placeholder="e.g. AY 2025-26 / July 2024 / Q2" value="AY 2025-26" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            </div>
+          </div>
+
+          <!-- Statutory Due Date & Internal Target Date -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1 text-red-600">Statutory Due Date *</label>
+              <input type="date" id="assign-stat-date" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Internal Target Date *</label>
+              <input type="date" id="assign-target-date" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            </div>
+          </div>
+
+          <!-- Assignee & Priority -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Assign To (Staff / Article) *</label>
+              <select id="assign-user-id" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-1 focus:ring-blue-500">
+                <option value="">-- Select Team Member --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Priority Level *</label>
+              <select id="assign-priority" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+                <option value="Urgent">Urgent (Immediate Deadline)</option>
+                <option value="High">High Priority</option>
+                <option value="Medium" selected>Medium Priority</option>
+                <option value="Low">Low Priority</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Work Notes & Specific Instructions -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Audit Notes / Scope Instructions</label>
+            <textarea id="assign-notes" rows="3" placeholder="Enter specific checklists, portal credentials note, or client contact instructions..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4 flex justify-end gap-3">
+            <button type="reset" class="px-5 py-2.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
+              Reset Form
+            </button>
+            <button type="submit" id="btn-submit-task" class="px-6 py-2.5 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition flex items-center gap-2">
+              <i class="fa-solid fa-check"></i> Allocate Task & Create Drive Folder
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 5: BULK COMPLIANCE ALLOCATION -->
+    <!-- ============================================================== -->
+    <section id="view-bulk" class="tab-view hidden">
+      <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+        <div class="border-b border-slate-200 pb-4 mb-6">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-ca-navy"></i> Bulk Compliance Task Allocation
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Batch allocate recurring compliance (e.g. GSTR-3B, Advance Tax, Annual MCA) across multiple clients</p>
+        </div>
+
+        <form id="form-bulk-task" onsubmit="handleBulkCreateTasks(event)" class="space-y-6">
+          
+          <!-- Category & Sub-Task -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Service Category *</label>
+              <select id="bulk-service-cat" onchange="onBulkCategoryChange()" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+                <option value="">-- Select Category --</option>
+                <option value="Direct Tax">Direct Tax</option>
+                <option value="Indirect Tax">Indirect Tax</option>
+                <option value="Corporate / MCA">Corporate / MCA</option>
+                <option value="Audit & Assurance">Audit & Assurance</option>
+                <option value="Accounting & Advisory">Accounting & Advisory</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Compliance Task *</label>
+              <select id="bulk-sub-task" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+                <option value="">-- Select Category First --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Financial Year & Period -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">FY</label>
+              <input type="text" id="bulk-fy" value="FY 2024-25" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Period / AY</label>
+              <input type="text" id="bulk-period" value="July 2024" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-red-600 uppercase tracking-wider mb-1">Statutory Date *</label>
+              <input type="date" id="bulk-stat-date" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Target Date *</label>
+              <input type="date" id="bulk-target-date" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800">
+            </div>
+          </div>
+
+          <!-- Multi-Client Selection Checklist -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Select Clients (<span id="bulk-selected-count">0</span> chosen)
+              </label>
+              <div class="flex gap-2">
+                <button type="button" onclick="selectAllBulkClients(true)" class="text-xs text-blue-600 hover:underline">Select All</button>
+                <span class="text-slate-300">|</span>
+                <button type="button" onclick="selectAllBulkClients(false)" class="text-xs text-slate-500 hover:underline">Clear</button>
+              </div>
+            </div>
+
+            <div id="bulk-client-checklist" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-2 bg-white rounded-lg border border-slate-200">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Allocation Mode & Assignees -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Team Distribution Strategy</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+              <label class="flex items-center gap-2 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 cursor-pointer">
+                <input type="radio" name="bulk-alloc-mode" value="RoundRobin" checked class="text-blue-600">
+                <span><strong>Round-Robin:</strong> Balance load equally among selected staff</span>
+              </label>
+              <label class="flex items-center gap-2 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 cursor-pointer">
+                <input type="radio" name="bulk-alloc-mode" value="Single" class="text-blue-600">
+                <span><strong>Single Assignee:</strong> Assign all to one specific person</span>
+              </label>
+            </div>
+
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Select Assignee(s)</label>
+            <div id="bulk-staff-checklist" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-2 bg-white rounded-lg border border-slate-200">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="pt-2 flex justify-end">
+            <button type="submit" id="btn-submit-bulk" class="px-6 py-2.5 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition flex items-center gap-2">
+              <i class="fa-solid fa-bolt"></i> Generate Bulk Tasks
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 6: TASK REASSIGNMENT WINDOW -->
+    <!-- ============================================================== -->
+    <section id="view-reassign" class="tab-view hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+        <div class="border-b border-slate-200 pb-4 mb-6">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-arrow-right-arrow-left text-ca-navy"></i> Task Reassignment & Handover Window
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Reassign in-progress or pending tasks to handle workload rebalancing or leave coverage</p>
+        </div>
+
+        <!-- Filter open tasks for reassignment -->
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+          <select id="reassign-filter-user" onchange="renderReassignmentTable()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700">
+            <option value="All">All Current Assignees</option>
+          </select>
+          <input type="text" id="reassign-search" oninput="renderReassignmentTable()" placeholder="Search client or task..." class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 w-64">
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+              <tr>
+                <th class="px-4 py-3">Task ID</th>
+                <th class="px-4 py-3">Client</th>
+                <th class="px-4 py-3">Sub-Task</th>
+                <th class="px-4 py-3">Statutory Date</th>
+                <th class="px-4 py-3">Current Assignee</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="reassign-table-body" class="divide-y divide-slate-200 text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 7: CLIENT MASTER DIRECTORY (CONFIDENTIAL) -->
+    <!-- ============================================================== -->
+    <section id="view-clients" class="tab-view hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between pb-4 mb-6 border-b border-slate-200 gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-building-user text-ca-navy"></i> Confidential Client Master
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Direct PAN, GSTIN, CIN registers and secured portal credential links</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <input type="text" id="client-search" oninput="renderClientsMaster()" placeholder="Search PAN, GSTIN, Client..." class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 w-60">
+            <button onclick="openClientModal()" class="px-4 py-2 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i> Add New Client
+            </button>
+          </div>
+        </div>
+
+        <!-- Clients Grid -->
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+              <tr>
+                <th class="px-4 py-3">Client ID</th>
+                <th class="px-4 py-3">Legal Name & Trade Name</th>
+                <th class="px-4 py-3">Entity Type</th>
+                <th class="px-4 py-3">PAN</th>
+                <th class="px-4 py-3">GSTIN</th>
+                <th class="px-4 py-3">Contact Person</th>
+                <th class="px-4 py-3">Billing Group</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clients-table-body" class="divide-y divide-slate-200 text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 8: USER & TEAM MANAGEMENT (SUPER ADMIN ONLY) -->
+    <!-- ============================================================== -->
+    <section id="view-users" class="tab-view hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap items-center justify-between pb-4 mb-6 border-b border-slate-200 gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-users-gear text-ca-navy"></i> Firm User & RBAC Management
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Super Admin control: Provision partners, managers, and article trainees</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="openUserModal()" class="px-4 py-2 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition flex items-center gap-2">
+              <i class="fa-solid fa-user-plus"></i> Add New Team Member
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+              <tr>
+                <th class="px-4 py-3">User ID</th>
+                <th class="px-4 py-3">Full Name</th>
+                <th class="px-4 py-3">Email Address</th>
+                <th class="px-4 py-3">Role</th>
+                <th class="px-4 py-3">Department</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body" class="divide-y divide-slate-200 text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 9: ACTIVITY & AUDIT LOGS -->
+    <!-- ============================================================== -->
+    <section id="view-logs" class="tab-view hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="border-b border-slate-200 pb-4 mb-6">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-ca-navy"></i> Compliance Activity Audit Trail
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Immutable system logs for ICAI compliance, audit evidence, and task status handoffs</p>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+              <tr>
+                <th class="px-4 py-3">Timestamp</th>
+                <th class="px-4 py-3">Task ID</th>
+                <th class="px-4 py-3">User</th>
+                <th class="px-4 py-3">Action Type</th>
+                <th class="px-4 py-3">Previous State</th>
+                <th class="px-4 py-3">Updated State / Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body" class="divide-y divide-slate-200 text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: TASK WORK SUBMISSION & COMPLETION -->
+  <!-- ============================================================== -->
+  <div id="modal-task-submit" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div class="bg-ca-navy text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-file-signature text-amber-400"></i> Submit Working Papers / Complete Task
+        </h3>
+        <button onclick="closeModal('modal-task-submit')" class="text-white/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-task-submit" onsubmit="handleTaskSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="submit-task-id">
+
+        <div>
+          <div class="text-xs text-slate-500">Task Reference:</div>
+          <div class="font-bold text-slate-800 text-sm" id="submit-task-summary">...</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Target Status *</label>
+          <select id="submit-new-status" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            <option value="Review Required" selected>Review Required (Send for Partner Approval)</option>
+            <option value="Completed">Completed (Finalized / E-Filed)</option>
+            <option value="In Progress">In Progress (Save Work Notes / Files Only)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Filing Ack No / Challan BSR / Remarks</label>
+          <input type="text" id="submit-ack-no" placeholder="e.g. Ack No: 87123490812 or BSR Code 021004" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Execution Work Notes</label>
+          <textarea id="submit-work-notes" rows="3" placeholder="Summary of audit checks, working paper references, tax payable computation..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800"></textarea>
+        </div>
+
+        <!-- Working Paper File Upload to Google Drive -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Attach Final Deliverables / Working Papers</label>
+          <input type="file" id="submit-file-input" multiple class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+          <p class="text-[11px] text-slate-400 mt-1">Files will be safely stored in Google Drive under: <code>CA Practice Files / [Client] / [Task_ID]</code></p>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+          <button type="button" onclick="closeModal('modal-task-submit')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" id="btn-save-submit" class="px-5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-paper-plane"></i> Submit & Update
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: PARTNER REVIEW (APPROVE OR REWORK) -->
+  <!-- ============================================================== -->
+  <div id="modal-partner-review" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="bg-ca-navy text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-signature text-purple-400"></i> Partner Quality Review
+        </h3>
+        <button onclick="closeModal('modal-partner-review')" class="text-white/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-partner-review" onsubmit="handlePartnerReviewSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="review-task-id">
+
+        <div>
+          <div class="text-xs text-slate-500">Reviewing Task:</div>
+          <div class="font-bold text-slate-800 text-sm" id="review-task-summary">...</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Partner Review Decision *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 cursor-pointer">
+              <input type="radio" name="review-decision" value="Approve" checked class="text-emerald-600">
+              <span class="text-xs font-semibold text-emerald-800">Approve & Mark Completed</span>
+            </label>
+            <label class="flex items-center gap-2 p-3 rounded-lg border border-amber-200 bg-amber-50/50 cursor-pointer">
+              <input type="radio" name="review-decision" value="Rework" class="text-amber-600">
+              <span class="text-xs font-semibold text-amber-800">Request Rework (Return)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Partner Remarks / Feedback</label>
+          <textarea id="review-remarks" rows="3" required placeholder="Verification observations, signature clearance, or items needing correction..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+          <button type="button" onclick="closeModal('modal-partner-review')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition">
+            Confirm Decision
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: REASSIGN TASK -->
+  <!-- ============================================================== -->
+  <div id="modal-reassign" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="bg-ca-navy text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-arrow-right-arrow-left text-amber-400"></i> Reassign Task
+        </h3>
+        <button onclick="closeModal('modal-reassign')" class="text-white/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-reassign-task" onsubmit="handleReassignSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="modal-reassign-task-id">
+
+        <div>
+          <div class="text-xs text-slate-500">Reassigning Task:</div>
+          <div class="font-bold text-slate-800 text-sm" id="modal-reassign-summary">...</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">New Assignee *</label>
+          <select id="modal-reassign-user" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+            <option value="">-- Select New Team Member --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Reassignment Reason *</label>
+          <textarea id="modal-reassign-reason" rows="3" required placeholder="State reason (e.g. Article Trainee examination leave, workload rebalance)..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+          <button type="button" onclick="closeModal('modal-reassign')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition">
+            Confirm Handover
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 4: ADD/EDIT CLIENT -->
+  <!-- ============================================================== -->
+  <div id="modal-client" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-xl w-full overflow-hidden border border-slate-200">
+      <div class="bg-ca-navy text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-building-circle-check text-blue-300"></i> Client Master Record
+        </h3>
+        <button onclick="closeModal('modal-client')" class="text-white/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-client-master" onsubmit="handleSaveClient(event)" class="p-6 space-y-4">
+        <input type="hidden" id="client-edit-id">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Legal Name *</label>
+            <input type="text" id="client-legal-name" required placeholder="e.g. Acme Industries Pvt Ltd" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Trade Name</label>
+            <input type="text" id="client-trade-name" placeholder="e.g. Acme Tech" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Entity Type *</label>
+            <select id="client-entity-type" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+              <option value="Private Ltd">Private Ltd</option>
+              <option value="LLP">LLP</option>
+              <option value="Firm">Partnership Firm</option>
+              <option value="Individual">Individual (Prop/HNI)</option>
+              <option value="Trust">Trust / NGO (12A/80G)</option>
+              <option value="Public Ltd">Public Ltd</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">PAN *</label>
+            <input type="text" id="client-pan" required placeholder="ABCDE1234F" maxlength="10" class="uppercase w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">GSTIN</label>
+            <input type="text" id="client-gstin" placeholder="27ABCDE1234F1Z5" maxlength="15" class="uppercase w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Contact Person</label>
+            <input type="text" id="client-contact" placeholder="Director / Officer Name" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mobile</label>
+            <input type="text" id="client-mobile" placeholder="+91 98..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Email</label>
+            <input type="email" id="client-email" placeholder="accounts@client.com" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Billing Retainer Group</label>
+            <input type="text" id="client-billing" placeholder="e.g. Tier-1 Monthly / Annual Audit" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Portal Credentials Vault Link</label>
+            <input type="text" id="client-vault" placeholder="https://vault.internal/..." class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+          <button type="button" onclick="closeModal('modal-client')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition">Save Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 5: ADD/EDIT USER (SUPER ADMIN ONLY) -->
+  <!-- ============================================================== -->
+  <div id="modal-user" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="bg-ca-navy text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-user-shield text-amber-400"></i> Manage Team User
+        </h3>
+        <button onclick="closeModal('modal-user')" class="text-white/70 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="form-user-master" onsubmit="handleSaveUser(event)" class="p-6 space-y-4">
+        <input type="hidden" id="user-edit-id">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Full Name *</label>
+          <input type="text" id="user-fullname" required placeholder="e.g. CA Ramesh Sharma" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Email Address *</label>
+          <input type="email" id="user-email" required placeholder="user@gmail.com" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">System Role *</label>
+            <select id="user-role" required class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+              <option value="Staff/Article_Trainee">Staff / Article Trainee</option>
+              <option value="Partner/Manager">Partner / Manager</option>
+              <option value="Super_Admin">Super Admin (Managing Partner)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Status</label>
+            <select id="user-status" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Department / Practice Area</label>
+          <input type="text" id="user-dept" placeholder="e.g. Direct Tax, Audit, Indirect Tax" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-800">
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end gap-3">
+          <button type="button" onclick="closeModal('modal-user')" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-ca-navy text-white text-xs font-semibold hover:bg-slate-900 transition">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- FOOTER -->
+  <!-- ============================================================== -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>
+        Chartered Accountancy Practice & Task Management System &copy; <span id="footer-year">2026</span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400">
+        <span>ICAI Statutory Compliant</span>
+        <span>&bull;</span>
+        <span>Encrypted RBAC Security</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- CLIENT-SIDE APPLICATION JAVASCRIPT -->
+  <!-- ============================================================== -->
+  <script>
+    // Global Application State
+    let currentUser = null;
+    let allTasks = [];
+    let allClients = [];
+    let allUsers = [];
+    let serviceTaxonomy = {};
+    let workspaceLayout = 'kanban'; // 'kanban' or 'table'
+
+    document.getElementById('footer-year').innerText = new Date().getFullYear();
+
+    // ================= INITIALIZATION =================
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+    });
+
+    function initApp() {
+      showLoader("Authenticating and loading practice context...");
+
+      // 1. Get Current User Context & Role
+      google.script.run
+        .withSuccessHandler(onUserContextLoaded)
+        .withFailureHandler(handleServerError)
+        .getCurrentUserContext();
+
+      // 2. Load Taxonomy
+      google.script.run
+        .withSuccessHandler(onTaxonomyLoaded)
+        .withFailureHandler(handleServerError)
+        .getCAServicesTaxonomy();
+    }
+
+    function onUserContextLoaded(user) {
+      currentUser = user;
+      hideLoader();
+
+      if (!user.isAuthenticated) {
+        showToast("Access Denied: " + user.message, "error");
+        document.body.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
+            <div class="bg-white p-8 rounded-xl shadow-md max-w-md text-center border border-slate-200">
+              <i class="fa-solid fa-lock text-4xl text-red-500 mb-4"></i>
+              <h2 class="text-xl font-bold text-slate-800">Unauthorized Access</h2>
+              <p class="text-sm text-slate-600 mt-2">${user.message}</p>
+              <p class="text-xs text-slate-400 mt-4">Logged in as: <strong>${user.email}</strong></p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Populate User Header
+      document.getElementById('user-display-name').innerText = user.full_name || user.email;
+      document.getElementById('user-display-role').innerText = user.role.replace(/_/g, ' ');
+      document.getElementById('role-badge').innerText = user.role.replace(/_/g, ' ');
+
+      // Enforce RBAC visibility on tabs
+      enforceRBACTabVisibility();
+
+      // Load Core Practice Data
+      refreshAllData();
+    }
+
+    function onTaxonomyLoaded(taxonomy) {
+      serviceTaxonomy = taxonomy || {};
+      populateServiceCategories();
+    }
+
+    function enforceRBACTabVisibility() {
+      if (!currentUser) return;
+
+      const isStaff = currentUser.isStaff;
+      const isAdmin = currentUser.isAdmin;
+      const isSuperAdmin = currentUser.isSuperAdmin;
+
+      // Tabs
+      const tabDashboard = document.getElementById('tab-dashboard');
+      const tabAllTasks = document.getElementById('tab-alltasks');
+      const tabAssign = document.getElementById('tab-assign');
+      const tabBulk = document.getElementById('tab-bulk');
+      const tabReassign = document.getElementById('tab-reassign');
+      const tabClients = document.getElementById('tab-clients');
+      const tabUsers = document.getElementById('tab-users');
+      const tabLogs = document.getElementById('tab-logs');
+
+      if (isStaff) {
+        tabDashboard.style.display = 'none';
+        tabAllTasks.style.display = 'none';
+        tabAssign.style.display = 'none';
+        tabBulk.style.display = 'none';
+        tabReassign.style.display = 'none';
+        tabClients.style.display = 'none';
+        tabUsers.style.display = 'none';
+        tabLogs.style.display = 'none';
+        switchTab('workspace');
+      } else {
+        tabDashboard.style.display = 'inline-flex';
+        tabAllTasks.style.display = 'inline-flex';
+        tabAssign.style.display = 'inline-flex';
+        tabBulk.style.display = 'inline-flex';
+        tabReassign.style.display = 'inline-flex';
+        tabClients.style.display = 'inline-flex';
+
+        // Super Admin only tabs
+        if (!isSuperAdmin) {
+          tabUsers.style.display = 'none';
+          tabLogs.style.display = 'none';
+        } else {
+          tabUsers.style.display = 'inline-flex';
+          tabLogs.style.display = 'inline-flex';
+        }
+      }
+    }
+
+    function refreshAllData() {
+      showLoader("Refreshing tasks and compliance schedules...");
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('fa-spin');
+
+      // 1. Fetch Tasks
+      google.script.run
+        .withSuccessHandler((tasks) => {
+          allTasks = tasks || [];
+          document.getElementById('my-tasks-count').innerText = allTasks.filter(t => t.status !== 'Completed').length;
+          renderMyWorkspace();
+          if (currentUser.isAdmin) {
+            renderAllFirmTasks();
+            renderReassignmentTable();
+          }
+          checkAndHideLoader();
+        })
+        .withFailureHandler(handleServerError)
+        .getTasks();
+
+      // 2. Fetch Clients
+      google.script.run
+        .withSuccessHandler((clients) => {
+          allClients = clients || [];
+          populateClientDropdowns();
+          if (currentUser.isAdmin) {
+            renderClientsMaster();
+          }
+          checkAndHideLoader();
+        })
+        .withFailureHandler(handleServerError)
+        .getClients();
+
+      // 3. Fetch Users (if admin)
+      if (currentUser.isAdmin) {
+        google.script.run
+          .withSuccessHandler((users) => {
+            allUsers = users || [];
+            populateUserDropdowns();
+            if (currentUser.isSuperAdmin) {
+              renderUsersMaster();
+            }
+            checkAndHideLoader();
+          })
+          .withFailureHandler(handleServerError)
+          .getUsers();
+
+        // 4. Fetch KPI Dashboard Data
+        google.script.run
+          .withSuccessHandler((kpis) => {
+            renderKPIDashboard(kpis);
+            checkAndHideLoader();
+          })
+          .withFailureHandler(handleServerError)
+          .getKPIDashboardData();
+
+        // 5. Fetch Audit Logs (if super admin)
+        if (currentUser.isSuperAdmin) {
+          google.script.run
+            .withSuccessHandler((logs) => {
+              renderAuditLogs(logs);
+              checkAndHideLoader();
+            })
+            .withFailureHandler(handleServerError)
+            .getActivityLogs(50);
+        }
+      }
+    }
+
+    let pendingLoads = 0;
+    function checkAndHideLoader() {
+      hideLoader();
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.remove('fa-spin');
+    }
+
+    function refreshCurrentView() {
+      refreshAllData();
+      showToast("Practice data re-synchronized.", "info");
+    }
+
+    // ================= TAB NAVIGATION =================
+    function switchTab(tabKey) {
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(b => {
+        b.classList.remove('text-ca-blue', 'bg-blue-50', 'border-blue-200');
+        b.classList.add('text-slate-600');
+      });
+
+      const targetView = document.getElementById(`view-${tabKey}`);
+      const targetBtn = document.getElementById(`tab-${tabKey}`);
+
+      if (targetView) targetView.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.remove('text-slate-600');
+        targetBtn.classList.add('text-ca-blue', 'bg-blue-50', 'border', 'border-blue-200');
+      }
+    }
+
+    // ================= WORKSPACE (KANBAN & TABLE) =================
+    function setWorkspaceLayout(layout) {
+      workspaceLayout = layout;
+      const btnKanban = document.getElementById('btn-layout-kanban');
+      const btnTable = document.getElementById('btn-layout-table');
+      const kanbanContainer = document.getElementById('ws-kanban-container');
+      const tableContainer = document.getElementById('ws-table-container');
+
+      if (layout === 'kanban') {
+        btnKanban.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
+        btnTable.classList.remove('bg-white', 'text-slate-800', 'shadow-xs');
+        kanbanContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+      } else {
+        btnTable.classList.add('bg-white', 'text-slate-800', 'shadow-xs');
+        btnKanban.classList.remove('bg-white', 'text-slate-800', 'shadow-xs');
+        tableContainer.classList.remove('hidden');
+        kanbanContainer.classList.add('hidden');
+      }
+    }
+
+    function renderMyWorkspace() {
+      const search = (document.getElementById('ws-search').value || '').toLowerCase();
+      const statusFilter = document.getElementById('ws-filter-status').value;
+
+      // Filter tasks for logged in user (if staff, already filtered; if admin, filter where assigned_to matches or show all)
+      let filtered = allTasks.filter(t => {
+        if (currentUser.isStaff) {
+          const matchUser = (t.assigned_to_user_id || '').toLowerCase() === currentUser.email.toLowerCase() ||
+                            (t.assigned_to_user_id || '').toLowerCase() === currentUser.user_id.toLowerCase();
+          if (!matchUser) return false;
+        }
+        if (statusFilter !== 'All' && t.status !== statusFilter) return false;
+        if (search) {
+          const hay = `${t.task_id} ${t.client_name} ${t.service_category} ${t.sub_task_description}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      // Render Kanban Columns
+      const pCol = document.getElementById('kanban-cards-pending');
+      const ipCol = document.getElementById('kanban-cards-inprogress');
+      const rCol = document.getElementById('kanban-cards-review');
+      const cCol = document.getElementById('kanban-cards-completed');
+
+      pCol.innerHTML = '';
+      ipCol.innerHTML = '';
+      rCol.innerHTML = '';
+      cCol.innerHTML = '';
+
+      let pCount = 0, ipCount = 0, rCount = 0, cCount = 0;
+
+      filtered.forEach(task => {
+        const cardHtml = createKanbanCardHtml(task);
+        if (task.status === 'Pending') {
+          pCol.innerHTML += cardHtml;
+          pCount++;
+        } else if (task.status === 'In Progress') {
+          ipCol.innerHTML += cardHtml;
+          ipCount++;
+        } else if (task.status === 'Review Required') {
+          rCol.innerHTML += cardHtml;
+          rCount++;
+        } else if (task.status === 'Completed') {
+          cCol.innerHTML += cardHtml;
+          cCount++;
+        }
+      });
+
+      document.getElementById('col-count-pending').innerText = pCount;
+      document.getElementById('col-count-inprogress').innerText = ipCount;
+      document.getElementById('col-count-review').innerText = rCount;
+      document.getElementById('col-count-completed').innerText = cCount;
+
+      // Render Table View
+      const tBody = document.getElementById('ws-table-body');
+      tBody.innerHTML = '';
+      filtered.forEach(t => {
+        const statDate = t.statutory_due_date ? t.statutory_due_date.split('T')[0] : '-';
+        const isOverdue = checkIfOverdue(t);
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-semibold text-blue-700">${t.task_id}</td>
+            <td class="px-4 py-3 font-medium text-slate-800">${escapeHtml(t.client_name)}</td>
+            <td class="px-4 py-3">
+              <span class="font-medium text-slate-800 block">${escapeHtml(t.sub_task_description)}</span>
+              <span class="text-[10px] text-slate-400">${t.service_category}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-600">${t.assessment_year || t.financial_year || '-'}</td>
+            <td class="px-4 py-3 font-medium ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-700'}">
+              ${statDate} ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded ml-1">Overdue</span>' : ''}
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold badge-${(t.priority || 'medium').toLowerCase()}">${t.priority}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold status-${(t.status || 'pending').toLowerCase().replace(/\s+/g, '')}">${t.status}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                ${t.drive_attachment_folder_url ? `<a href="${t.drive_attachment_folder_url}" target="_blank" title="Open Drive Folder" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-folder-open"></i></a>` : ''}
+                ${t.status === 'Pending' ? `<button onclick="startTask('${t.task_id}')" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-700">Start</button>` : ''}
+                <button onclick="openTaskSubmitModal('${t.task_id}')" class="px-2.5 py-1 rounded bg-emerald-600 text-white text-[10px] font-medium hover:bg-emerald-700">Complete / Papers</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function createKanbanCardHtml(t) {
+      const isOverdue = checkIfOverdue(t);
+      const statDate = t.statutory_due_date ? t.statutory_due_date.split('T')[0] : '-';
+      const targetDate = t.target_completion_date ? t.target_completion_date.split('T')[0] : '-';
+
+      return `
+        <div class="bg-white rounded-xl p-3.5 shadow-xs border border-slate-200 hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-blue-700">${t.task_id}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold badge-${(t.priority || 'medium').toLowerCase()}">${t.priority}</span>
+          </div>
+
+          <h4 class="font-bold text-slate-800 text-xs leading-snug line-clamp-2">${escapeHtml(t.client_name)}</h4>
+          <p class="text-xs text-slate-600 mt-1 font-medium">${escapeHtml(t.sub_task_description)}</p>
+          <div class="text-[10px] text-slate-400 mt-0.5">${t.service_category} &bull; ${t.assessment_year || t.financial_year || ''}</div>
+
+          <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <div class="${isOverdue ? 'text-red-600 font-bold' : 'text-slate-500'}">
+              <i class="fa-regular fa-calendar-xmark mr-1"></i> Due: ${statDate}
+            </div>
+            ${t.drive_attachment_folder_url ? `<a href="${t.drive_attachment_folder_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs" title="Open Task Folder in Drive"><i class="fa-solid fa-folder-open"></i></a>` : ''}
+          </div>
+
+          ${t.work_notes ? `<div class="mt-2 text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 italic line-clamp-2">${escapeHtml(t.work_notes)}</div>` : ''}
+
+          <!-- Card Action Buttons -->
+          <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+            ${t.status === 'Pending' ? `
+              <button onclick="startTask('${t.task_id}')" class="w-1/2 py-1.5 px-2 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition">
+                <i class="fa-solid fa-play text-[10px]"></i> Start Work
+              </button>
+            ` : ''}
+            
+            <button onclick="openTaskSubmitModal('${t.task_id}')" class="${t.status === 'Pending' ? 'w-1/2' : 'w-full'} py-1.5 px-2 bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition">
+              <i class="fa-solid fa-paper-plane text-[10px]"></i> Submit / Complete
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function checkIfOverdue(t) {
+      if (t.status === 'Completed') return false;
+      if (!t.statutory_due_date) return false;
+      const due = new Date(t.statutory_due_date.split('T')[0]);
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      return due < now;
+    }
+
+    function startTask(taskId) {
+      showLoader(`Setting task ${taskId} to In Progress...`);
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          showToast(`Task ${taskId} is now In Progress!`, 'success');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .updateTaskStatus(taskId, 'In Progress', 'Task started by assignee.', '', []);
+    }
+
+    // ================= MODAL: TASK SUBMISSION & WORKING PAPERS =================
+    let currentSubmitTask = null;
+    function openTaskSubmitModal(taskId) {
+      currentSubmitTask = allTasks.find(t => t.task_id === taskId);
+      if (!currentSubmitTask) return;
+
+      document.getElementById('submit-task-id').value = taskId;
+      document.getElementById('submit-task-summary').innerText = `${currentSubmitTask.task_id}: ${currentSubmitTask.client_name} - ${currentSubmitTask.sub_task_description}`;
+      document.getElementById('submit-ack-no').value = '';
+      document.getElementById('submit-work-notes').value = '';
+      document.getElementById('submit-file-input').value = '';
+      document.getElementById('submit-new-status').value = 'Review Required';
+
+      openModal('modal-task-submit');
+    }
+
+    async function handleTaskSubmit(e) {
+      e.preventDefault();
+      const taskId = document.getElementById('submit-task-id').value;
+      const newStatus = document.getElementById('submit-new-status').value;
+      const ackNo = document.getElementById('submit-ack-no').value;
+      const notes = document.getElementById('submit-work-notes').value;
+      const fileInput = document.getElementById('submit-file-input');
+
+      showLoader("Encoding working papers and updating task state...");
+      const fileDataList = [];
+
+      if (fileInput.files && fileInput.files.length > 0) {
+        for (let i = 0; i < fileInput.files.length; i++) {
+          const file = fileInput.files[i];
+          const base64 = await toBase64(file);
+          fileDataList.push({
+            fileName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            base64: base64.split(',')[1] // remove data:*/*;base64,
+          });
+        }
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          closeModal('modal-task-submit');
+          showToast(`Task ${taskId} updated successfully!`, 'success');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .updateTaskStatus(taskId, newStatus, notes, ackNo, fileDataList);
+    }
+
+    // ================= ALL FIRM TASKS VIEW (ADMIN/PARTNER) =================
+    function renderAllFirmTasks() {
+      const catFilter = document.getElementById('all-filter-category').value;
+      const statusFilter = document.getElementById('all-filter-status').value;
+      const assigneeFilter = document.getElementById('all-filter-assignee').value;
+      const search = (document.getElementById('all-search').value || '').toLowerCase();
+
+      const filtered = allTasks.filter(t => {
+        if (catFilter !== 'All' && t.service_category !== catFilter) return false;
+        if (statusFilter !== 'All' && t.status !== statusFilter) return false;
+        if (assigneeFilter !== 'All' && t.assigned_to_user_id !== assigneeFilter) return false;
+        if (search) {
+          const hay = `${t.task_id} ${t.client_name} ${t.sub_task_description} ${t.assigned_to_user_id}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      const tBody = document.getElementById('all-tasks-table-body');
+      tBody.innerHTML = '';
+
+      filtered.forEach(t => {
+        const isOverdue = checkIfOverdue(t);
+        const statDate = t.statutory_due_date ? t.statutory_due_date.split('T')[0] : '-';
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-semibold text-blue-700">${t.task_id}</td>
+            <td class="px-4 py-3 font-medium text-slate-800">${escapeHtml(t.client_name)}</td>
+            <td class="px-4 py-3">
+              <span class="font-medium text-slate-800 block">${escapeHtml(t.sub_task_description)}</span>
+              <span class="text-[10px] text-slate-400">${t.service_category}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-600">${t.assessment_year || t.financial_year || '-'}</td>
+            <td class="px-4 py-3 font-medium ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-700'}">
+              ${statDate} ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded ml-1">Overdue</span>' : ''}
+            </td>
+            <td class="px-4 py-3 text-slate-700 font-medium">${escapeHtml(t.assigned_to_user_id)}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold badge-${(t.priority || 'medium').toLowerCase()}">${t.priority}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold status-${(t.status || 'pending').toLowerCase().replace(/\s+/g, '')}">${t.status}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                ${t.drive_attachment_folder_url ? `<a href="${t.drive_attachment_folder_url}" target="_blank" title="Drive Folder" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-folder-open"></i></a>` : ''}
+                ${t.status === 'Review Required' ? `<button onclick="openPartnerReviewModal('${t.task_id}')" class="px-2.5 py-1 rounded bg-purple-600 text-white text-[10px] font-medium hover:bg-purple-700">Review</button>` : ''}
+                <button onclick="openReassignModal('${t.task_id}')" title="Reassign" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded"><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // ================= MODAL: PARTNER QUALITY REVIEW =================
+    function openPartnerReviewModal(taskId) {
+      const task = allTasks.find(t => t.task_id === taskId);
+      if (!task) return;
+
+      document.getElementById('review-task-id').value = taskId;
+      document.getElementById('review-task-summary').innerText = `${task.task_id}: ${task.client_name} (${task.sub_task_description})`;
+      document.getElementById('review-remarks').value = '';
+      openModal('modal-partner-review');
+    }
+
+    function handlePartnerReviewSubmit(e) {
+      e.preventDefault();
+      const taskId = document.getElementById('review-task-id').value;
+      const decision = document.querySelector('input[name="review-decision"]:checked').value;
+      const remarks = document.getElementById('review-remarks').value;
+
+      showLoader("Recording partner review decision...");
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          closeModal('modal-partner-review');
+          showToast(`Task ${taskId} review processed: ${decision}!`, 'success');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .partnerReviewTask(taskId, decision, remarks);
+    }
+
+    // ================= SINGLE TASK CREATION =================
+    function onCategoryChange() {
+      const cat = document.getElementById('assign-service-cat').value;
+      const subSelect = document.getElementById('assign-sub-task');
+      subSelect.innerHTML = '<option value="">-- Select Sub-Task / Form --</option>';
+
+      if (serviceTaxonomy[cat]) {
+        serviceTaxonomy[cat].forEach(item => {
+          subSelect.innerHTML += `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`;
+        });
+      }
+    }
+
+    function handleCreateSingleTask(e) {
+      e.preventDefault();
+      const clientSelect = document.getElementById('assign-client-id');
+      const selectedOption = clientSelect.options[clientSelect.selectedIndex];
+
+      const taskData = {
+        client_id: clientSelect.value,
+        client_name: selectedOption.getAttribute('data-name') || selectedOption.text,
+        service_category: document.getElementById('assign-service-cat').value,
+        sub_task_description: document.getElementById('assign-sub-task').value,
+        financial_year: document.getElementById('assign-fy').value,
+        assessment_year: document.getElementById('assign-period').value,
+        statutory_due_date: document.getElementById('assign-stat-date').value,
+        target_completion_date: document.getElementById('assign-target-date').value,
+        assigned_to_user_id: document.getElementById('assign-user-id').value,
+        priority: document.getElementById('assign-priority').value,
+        work_notes: document.getElementById('assign-notes').value
+      };
+
+      showLoader("Creating task and provisioning Google Drive folder...");
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          showToast(`Task ${res.task_id} successfully allocated!`, 'success');
+          document.getElementById('form-single-task').reset();
+          switchTab('alltasks');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .createTask(taskData);
+    }
+
+    // ================= BULK TASK CREATION =================
+    function onBulkCategoryChange() {
+      const cat = document.getElementById('bulk-service-cat').value;
+      const subSelect = document.getElementById('bulk-sub-task');
+      subSelect.innerHTML = '<option value="">-- Select Sub-Task / Form --</option>';
+
+      if (serviceTaxonomy[cat]) {
+        serviceTaxonomy[cat].forEach(item => {
+          subSelect.innerHTML += `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`;
+        });
+      }
+    }
+
+    function selectAllBulkClients(checked) {
+      document.querySelectorAll('.bulk-client-cb').forEach(cb => cb.checked = checked);
+      updateBulkSelectedCount();
+    }
+
+    function updateBulkSelectedCount() {
+      const count = document.querySelectorAll('.bulk-client-cb:checked').length;
+      document.getElementById('bulk-selected-count').innerText = count;
+    }
+
+    function handleBulkCreateTasks(e) {
+      e.preventDefault();
+      const selectedClients = [];
+      document.querySelectorAll('.bulk-client-cb:checked').forEach(cb => {
+        selectedClients.push({
+          client_id: cb.value,
+          client_name: cb.getAttribute('data-name')
+        });
+      });
+
+      if (selectedClients.length === 0) {
+        showToast("Please select at least one client for bulk allocation.", "warning");
+        return;
+      }
+
+      const selectedAssignees = [];
+      document.querySelectorAll('.bulk-staff-cb:checked').forEach(cb => {
+        selectedAssignees.push(cb.value);
+      });
+
+      if (selectedAssignees.length === 0) {
+        showToast("Please select at least one team member to distribute tasks to.", "warning");
+        return;
+      }
+
+      const bulkData = {
+        clients: selectedClients,
+        assignees: selectedAssignees,
+        allocation_mode: document.querySelector('input[name="bulk-alloc-mode"]:checked').value,
+        service_category: document.getElementById('bulk-service-cat').value,
+        sub_task_description: document.getElementById('bulk-sub-task').value,
+        financial_year: document.getElementById('bulk-fy').value,
+        assessment_year: document.getElementById('bulk-period').value,
+        statutory_due_date: document.getElementById('bulk-stat-date').value,
+        target_completion_date: document.getElementById('bulk-target-date').value,
+        priority: "Medium"
+      };
+
+      showLoader(`Batch allocating ${selectedClients.length} compliance jobs...`);
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          showToast(`Successfully created ${res.count} tasks across team!`, 'success');
+          switchTab('alltasks');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .bulkCreateTasks(bulkData);
+    }
+
+    // ================= REASSIGNMENT WINDOW =================
+    function renderReassignmentTable() {
+      const userFilter = document.getElementById('reassign-filter-user').value;
+      const search = (document.getElementById('reassign-search').value || '').toLowerCase();
+
+      const openTasks = allTasks.filter(t => t.status !== 'Completed');
+      const filtered = openTasks.filter(t => {
+        if (userFilter !== 'All' && t.assigned_to_user_id !== userFilter) return false;
+        if (search) {
+          const hay = `${t.task_id} ${t.client_name} ${t.sub_task_description}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      const tBody = document.getElementById('reassign-table-body');
+      tBody.innerHTML = '';
+
+      filtered.forEach(t => {
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-semibold text-blue-700">${t.task_id}</td>
+            <td class="px-4 py-3 font-medium text-slate-800">${escapeHtml(t.client_name)}</td>
+            <td class="px-4 py-3 text-slate-700">${escapeHtml(t.sub_task_description)}</td>
+            <td class="px-4 py-3 text-slate-600">${t.statutory_due_date ? t.statutory_due_date.split('T')[0] : '-'}</td>
+            <td class="px-4 py-3 font-semibold text-slate-800">${escapeHtml(t.assigned_to_user_id)}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold status-${(t.status || 'pending').toLowerCase().replace(/\s+/g, '')}">${t.status}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="openReassignModal('${t.task_id}')" class="px-3 py-1 bg-amber-600 text-white rounded text-xs font-semibold hover:bg-amber-700 transition">
+                Reassign
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function openReassignModal(taskId) {
+      const task = allTasks.find(t => t.task_id === taskId);
+      if (!task) return;
+
+      document.getElementById('modal-reassign-task-id').value = taskId;
+      document.getElementById('modal-reassign-summary').innerText = `${task.task_id}: ${task.client_name} (Currently: ${task.assigned_to_user_id})`;
+      document.getElementById('modal-reassign-reason').value = '';
+      openModal('modal-reassign');
+    }
+
+    function handleReassignSubmit(e) {
+      e.preventDefault();
+      const taskId = document.getElementById('modal-reassign-task-id').value;
+      const newUser = document.getElementById('modal-reassign-user').value;
+      const reason = document.getElementById('modal-reassign-reason').value;
+
+      showLoader(`Reassigning ${taskId} to ${newUser}...`);
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          closeModal('modal-reassign');
+          showToast(res.message, 'success');
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .reassignTask(taskId, newUser, reason);
+    }
+
+    // ================= CLIENT DIRECTORY (MASTER) =================
+    function renderClientsMaster() {
+      const search = (document.getElementById('client-search').value || '').toLowerCase();
+      const filtered = allClients.filter(c => {
+        if (search) {
+          const hay = `${c.client_id} ${c.client_legal_name} ${c.trade_name} ${c.pan || ''} ${c.gstin || ''}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      const tBody = document.getElementById('clients-table-body');
+      tBody.innerHTML = '';
+
+      filtered.forEach(c => {
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-semibold text-blue-700">${c.client_id}</td>
+            <td class="px-4 py-3">
+              <span class="font-bold text-slate-800 block">${escapeHtml(c.client_legal_name)}</span>
+              ${c.trade_name ? `<span class="text-[11px] text-slate-400">Trade: ${escapeHtml(c.trade_name)}</span>` : ''}
+            </td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px]">${c.entity_type}</span></td>
+            <td class="px-4 py-3 font-mono font-semibold text-slate-800">${c.pan || '-'}</td>
+            <td class="px-4 py-3 font-mono text-[11px] text-slate-600">${c.gstin || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="block font-medium text-slate-800">${escapeHtml(c.primary_contact_person || '-')}</span>
+              <span class="text-[10px] text-slate-400">${c.mobile || ''}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-600">${c.billing_group || 'Standard'}</td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                ${c.portal_credentials_vault_link ? `<a href="${c.portal_credentials_vault_link}" target="_blank" title="Vault Link" class="text-blue-600 hover:text-blue-800"><i class="fa-solid fa-key"></i></a>` : ''}
+                <button onclick="editClient('${c.client_id}')" class="text-slate-500 hover:text-slate-800"><i class="fa-solid fa-pen-to-square"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function openClientModal() {
+      document.getElementById('form-client-master').reset();
+      document.getElementById('client-edit-id').value = '';
+      openModal('modal-client');
+    }
+
+    function editClient(clientId) {
+      const c = allClients.find(item => item.client_id === clientId);
+      if (!c) return;
+
+      document.getElementById('client-edit-id').value = c.client_id;
+      document.getElementById('client-legal-name').value = c.client_legal_name;
+      document.getElementById('client-trade-name').value = c.trade_name || '';
+      document.getElementById('client-entity-type').value = c.entity_type || 'Private Ltd';
+      document.getElementById('client-pan').value = c.pan || '';
+      document.getElementById('client-gstin').value = c.gstin || '';
+      document.getElementById('client-contact').value = c.primary_contact_person || '';
+      document.getElementById('client-mobile').value = c.mobile || '';
+      document.getElementById('client-email').value = c.email || '';
+      document.getElementById('client-billing').value = c.billing_group || '';
+      document.getElementById('client-vault').value = c.portal_credentials_vault_link || '';
+
+      openModal('modal-client');
+    }
+
+    function handleSaveClient(e) {
+      e.preventDefault();
+      const clientData = {
+        client_id: document.getElementById('client-edit-id').value,
+        client_legal_name: document.getElementById('client-legal-name').value,
+        trade_name: document.getElementById('client-trade-name').value,
+        entity_type: document.getElementById('client-entity-type').value,
+        pan: document.getElementById('client-pan').value.toUpperCase(),
+        gstin: document.getElementById('client-gstin').value.toUpperCase(),
+        primary_contact_person: document.getElementById('client-contact').value,
+        mobile: document.getElementById('client-mobile').value,
+        email: document.getElementById('client-email').value,
+        billing_group: document.getElementById('client-billing').value,
+        portal_credentials_vault_link: document.getElementById('client-vault').value
+      };
+
+      showLoader("Saving client to master registry...");
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          closeModal('modal-client');
+          showToast("Client saved successfully!", "success");
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .saveClient(clientData);
+    }
+
+    // ================= USER & RBAC MANAGEMENT (SUPER ADMIN) =================
+    function renderUsersMaster() {
+      const tBody = document.getElementById('users-table-body');
+      tBody.innerHTML = '';
+
+      allUsers.forEach(u => {
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-semibold text-blue-700">${u.user_id}</td>
+            <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(u.full_name)}</td>
+            <td class="px-4 py-3 font-mono text-slate-700">${escapeHtml(u.email)}</td>
+            <td class="px-4 py-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'Super_Admin' ? 'bg-purple-100 text-purple-800' : (u.role === 'Partner/Manager' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700')}">
+                ${u.role.replace(/_/g, ' ')}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-slate-600">${u.department || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${u.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">${u.status}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="editUser('${u.user_id}')" class="text-slate-500 hover:text-slate-800"><i class="fa-solid fa-pen-to-square"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function openUserModal() {
+      document.getElementById('form-user-master').reset();
+      document.getElementById('user-edit-id').value = '';
+      openModal('modal-user');
+    }
+
+    function editUser(userId) {
+      const u = allUsers.find(item => item.user_id === userId);
+      if (!u) return;
+
+      document.getElementById('user-edit-id').value = u.user_id;
+      document.getElementById('user-fullname').value = u.full_name;
+      document.getElementById('user-email').value = u.email;
+      document.getElementById('user-role').value = u.role;
+      document.getElementById('user-status').value = u.status;
+      document.getElementById('user-dept').value = u.department || '';
+
+      openModal('modal-user');
+    }
+
+    function handleSaveUser(e) {
+      e.preventDefault();
+      const userData = {
+        user_id: document.getElementById('user-edit-id').value,
+        full_name: document.getElementById('user-fullname').value,
+        email: document.getElementById('user-email').value,
+        role: document.getElementById('user-role').value,
+        status: document.getElementById('user-status').value,
+        department: document.getElementById('user-dept').value
+      };
+
+      showLoader("Updating user authorization and permissions...");
+      google.script.run
+        .withSuccessHandler((res) => {
+          hideLoader();
+          closeModal('modal-user');
+          showToast("User updated successfully!", "success");
+          refreshAllData();
+        })
+        .withFailureHandler(handleServerError)
+        .saveUser(userData);
+    }
+
+    // ================= KPI DASHBOARD =================
+    function renderKPIDashboard(kpi) {
+      if (!kpi) return;
+
+      document.getElementById('kpi-overdue').innerText = kpi.overdue_tasks || 0;
+      document.getElementById('kpi-due-week').innerText = kpi.due_this_week || 0;
+      document.getElementById('kpi-review').innerText = kpi.review_required || 0;
+      document.getElementById('kpi-completed').innerText = kpi.completed || 0;
+      document.getElementById('kpi-completed-today').innerText = kpi.completed_today || 0;
+
+      // Practice Category Distribution Bars
+      const catContainer = document.getElementById('kpi-category-bars');
+      catContainer.innerHTML = '';
+      const total = kpi.total_tasks || 1;
+
+      const colors = {
+        "Direct Tax": "bg-blue-600",
+        "Indirect Tax": "bg-indigo-600",
+        "Corporate / MCA": "bg-purple-600",
+        "Audit & Assurance": "bg-emerald-600",
+        "Accounting & Advisory": "bg-amber-500",
+        "Other": "bg-slate-400"
+      };
+
+      Object.keys(kpi.category_counts).forEach(cat => {
+        const count = kpi.category_counts[cat] || 0;
+        const pct = Math.round((count / total) * 100);
+        catContainer.innerHTML += `
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+              <span>${cat}</span>
+              <span>${count} tasks (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div class="${colors[cat] || 'bg-blue-500'} h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      // Staff Performance Table
+      const staffBody = document.getElementById('kpi-staff-table-body');
+      staffBody.innerHTML = '';
+
+      (kpi.staff_performance || []).forEach(s => {
+        staffBody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-3 py-2 font-medium text-slate-800">${escapeHtml(s.assignee)}</td>
+            <td class="px-3 py-2 text-center font-bold text-slate-700">${s.pending + s.in_progress}</td>
+            <td class="px-3 py-2 text-center text-purple-700 font-semibold">${s.review_required}</td>
+            <td class="px-3 py-2 text-center font-bold ${s.overdue > 0 ? 'text-red-600' : 'text-slate-400'}">${s.overdue}</td>
+            <td class="px-3 py-2 text-center text-slate-600">${s.avg_tat_days} d</td>
+            <td class="px-3 py-2 text-center">
+              <span class="px-2 py-0.5 rounded font-bold text-[10px] ${s.adherence_rate >= 80 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${s.adherence_rate}%
+              </span>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // ================= AUDIT LOGS =================
+    function renderAuditLogs(logs) {
+      const tBody = document.getElementById('logs-table-body');
+      tBody.innerHTML = '';
+
+      (logs || []).forEach(l => {
+        tBody.innerHTML += `
+          <tr class="hover:bg-slate-50 text-[11px]">
+            <td class="px-4 py-2 font-mono text-slate-500">${l.timestamp}</td>
+            <td class="px-4 py-2 font-semibold text-blue-700">${l.task_id}</td>
+            <td class="px-4 py-2 text-slate-700 font-medium">${escapeHtml(l.user_email)}</td>
+            <td class="px-4 py-2"><span class="px-2 py-0.5 rounded bg-slate-100 font-semibold text-[10px] text-slate-800">${l.action_type}</span></td>
+            <td class="px-4 py-2 text-slate-400 font-mono">${escapeHtml(l.previous_value || '-')}</td>
+            <td class="px-4 py-2 text-slate-800">${escapeHtml(l.new_value || '-')}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // ================= DROPDOWN POPULATORS =================
+    function populateServiceCategories() {
+      // Single Task
+      onCategoryChange();
+      // Bulk Task
+      onBulkCategoryChange();
+    }
+
+    function populateClientDropdowns() {
+      // Single assign dropdown
+      const select = document.getElementById('assign-client-id');
+      select.innerHTML = '<option value="">-- Select Client (Searchable by PAN / Name) --</option>';
+
+      allClients.forEach(c => {
+        const label = `${c.client_legal_name} ${c.pan ? '(' + c.pan + ')' : ''} [${c.entity_type}]`;
+        select.innerHTML += `<option value="${c.client_id}" data-name="${escapeHtml(c.client_legal_name)}">${escapeHtml(label)}</option>`;
+      });
+
+      // Bulk Checklist
+      const bulkContainer = document.getElementById('bulk-client-checklist');
+      bulkContainer.innerHTML = '';
+
+      allClients.forEach(c => {
+        bulkContainer.innerHTML += `
+          <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-50 text-xs text-slate-700 cursor-pointer border border-slate-100">
+            <input type="checkbox" value="${c.client_id}" data-name="${escapeHtml(c.client_legal_name)}" onchange="updateBulkSelectedCount()" class="bulk-client-cb text-blue-600 rounded">
+            <span class="truncate" title="${escapeHtml(c.client_legal_name)}">${escapeHtml(c.client_legal_name)}</span>
+          </label>
+        `;
+      });
+    }
+
+    function populateUserDropdowns() {
+      // Single assign user dropdown
+      const selectAssign = document.getElementById('assign-user-id');
+      const selectReassign = document.getElementById('modal-reassign-user');
+      const selectAllFilter = document.getElementById('all-filter-assignee');
+      const selectReassignFilter = document.getElementById('reassign-filter-user');
+
+      selectAssign.innerHTML = '<option value="">-- Select Team Member --</option>';
+      selectReassign.innerHTML = '<option value="">-- Select New Team Member --</option>';
+      selectAllFilter.innerHTML = '<option value="All">All Staff / Assignees</option>';
+      selectReassignFilter.innerHTML = '<option value="All">All Current Assignees</option>';
+
+      // Bulk staff checklist
+      const bulkStaffCont = document.getElementById('bulk-staff-checklist');
+      bulkStaffCont.innerHTML = '';
+
+      allUsers.forEach(u => {
+        const optionHtml = `<option value="${u.email}">${escapeHtml(u.full_name)} (${u.role.replace(/_/g, ' ')})</option>`;
+        selectAssign.innerHTML += optionHtml;
+        selectReassign.innerHTML += optionHtml;
+        selectAllFilter.innerHTML += `<option value="${u.email}">${escapeHtml(u.full_name)}</option>`;
+        selectReassignFilter.innerHTML += `<option value="${u.email}">${escapeHtml(u.full_name)}</option>`;
+
+        bulkStaffCont.innerHTML += `
+          <label class="flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 text-xs text-slate-700 cursor-pointer">
+            <input type="checkbox" value="${u.email}" class="bulk-staff-cb text-blue-600 rounded" ${u.role === 'Staff/Article_Trainee' ? 'checked' : ''}>
+            <span class="truncate">${escapeHtml(u.full_name)}</span>
+          </label>
+        `;
+      });
+    }
+
+    // ================= MODAL & UI UTILITIES =================
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function showLoader(msg) {
+      const loader = document.getElementById('global-loader');
+      const text = document.getElementById('loader-message');
+      if (text) text.innerText = msg || "Loading...";
+      if (loader) loader.classList.remove('hidden');
+    }
+
+    function hideLoader() {
+      const loader = document.getElementById('global-loader');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-red-600 text-white',
+        warning: 'bg-amber-600 text-white',
+        info: 'bg-slate-900 text-white'
+      };
+
+      const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-exclamation',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
+
+      toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2.5 transition transform duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i> <span>${escapeHtml(message)}</span>`;
+
+      container.appendChild(toast);
+
+      // Animate in
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function handleServerError(err) {
+      hideLoader();
+      const msg = (err && err.message) ? err.message : String(err);
+      showToast("Server Error: " + msg, "error");
+      console.error("Apps Script Error:", err);
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

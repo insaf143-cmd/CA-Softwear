@@ -1,0 +1,23 @@
+{
+  "name": "ca-practice-management-system",
+  "version": "1.0.0",
+  "description": "Chartered Accountancy Practice & Task Management System on Google Sheets & Google Apps Script",
+  "scripts": {
+    "sync": "node auto-sync.js",
+    "push": "git add . && git commit -m \"manual push\" && git push",
+    "clasp:login": "npx @google/clasp login",
+    "clasp:push": "npx @google/clasp push -f",
+    "clasp:watch": "npx @google/clasp push --watch"
+  },
+  "keywords": [
+    "google-apps-script",
+    "google-sheets",
+    "chartered-accountancy",
+    "ca-practice-management",
+    "compliance",
+    "tax",
+    "audit"
+  ],
+  "author": "CA Insaf <insaf143@gmail.com>",
+  "license": "UNLICENSED"
+}
