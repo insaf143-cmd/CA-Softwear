@@ -1,6 +1,33 @@
 # Chartered Accountancy (CA) Practice & Task Management System
 ### Enterprise Google Workspace Solution for CA Firms, Tax Consultants & Audit Practices
-**Configured Primary Super Admin:** `insaf143@gmail.com`
+**Configured Primary Super Admin:** `insaf143@gmail.com`  
+**GitHub Repository:** [https://github.com/insaf143-cmd/CA-Softwear](https://github.com/insaf143-cmd/CA-Softwear)  
+**Active Branches:**
+- `main` (under `/google-workspace-suite/`)
+- `office-management-suite` (standalone root project)
+
+---
+
+## ⚡ Continuous Integration & Automatic Reflection Engine
+
+This project includes a real-time **Automatic Reflection Engine** so that any code change is automatically synchronized across Git, GitHub, and your live Google Apps Script environment.
+
+### 1. Local Auto-Sync Watcher (Desktop → GitHub)
+Whenever you modify `Code.gs`, `Index.html`, or documentation:
+- Double-click [`START_AUTO_SYNC.bat`](START_AUTO_SYNC.bat) or run `npm run sync`.
+- The watcher debounces saves (3-second buffer), automatically stages all changes, creates a timestamped commit (`auto-sync: updated ...`), and pushes directly to GitHub `origin/office-management-suite`.
+
+### 2. GitHub Actions CI/CD (GitHub → Google Apps Script / Google Sheets)
+A GitHub Actions workflow is located at [`.github/workflows/deploy-apps-script.yml`](.github/workflows/deploy-apps-script.yml).
+- Whenever code is pushed to GitHub, GitHub Actions runs `@google/clasp push` to automatically deploy the updated files directly to the Google Sheet and live Web App!
+- **Required GitHub Secrets:**
+  - `CLASP_SCRIPT_ID`: Script ID found under Apps Script > Project Settings (gear icon).
+  - `CLASPRC_JSON`: Your clasp token generated once via `npx @google/clasp login` (located at `~/.clasprc.json`).
+
+### 3. Real-Time Hot-Reloading (`clasp:watch`)
+- Add your Script ID to [`.clasp.json`](.clasp.json).
+- Run: `npm run clasp:watch`
+- Any change saved on your computer immediately updates the live Google Apps Script backend in Google Drive in real-time.
 
 ---
 
