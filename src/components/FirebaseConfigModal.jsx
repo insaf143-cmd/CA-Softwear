@@ -81,15 +81,20 @@ export default function FirebaseConfigModal({ onClose, currentData, onUploadAll 
     }
   };
 
+  const [uploadError, setUploadError] = useState(false);
+
   const handleBulkUpload = async () => {
     if (!onUploadAll || !currentData) return;
     setUploading(true);
+    setUploadError(false);
     setUploadMsg('Uploading all firm records to Firebase Firestore...');
     try {
-      await onUploadAll(currentData);
-      setUploadMsg('Upload Complete! All clients, tasks, and records are synced to Firebase.');
+      const res = await onUploadAll(currentData);
+      setUploadError(false);
+      setUploadMsg(`Success! Uploaded ${res?.count || 'all'} records to your Firebase Firestore collections.`);
     } catch (err) {
-      setUploadMsg('Upload error: ' + err.message);
+      setUploadError(true);
+      setUploadMsg(err.message);
     } finally {
       setUploading(false);
     }
@@ -164,7 +169,11 @@ export default function FirebaseConfigModal({ onClose, currentData, onUploadAll 
               </button>
             </div>
             {uploadMsg && (
-              <div className="text-[11px] font-mono text-emerald-400 pt-1">
+              <div className={`text-xs p-3 rounded-xl border mt-2 leading-relaxed ${
+                uploadError
+                  ? 'bg-red-500/10 text-red-300 border-red-500/30'
+                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+              }`}>
                 {uploadMsg}
               </div>
             )}

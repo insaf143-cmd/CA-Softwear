@@ -221,17 +221,97 @@ export const uploadAllDataToFirebase = async (fullData) => {
   if (!isFirebaseConfigured || !db) {
     throw new Error("Firebase is not connected. Please save your configuration first.");
   }
+
+  // 1. First test write permission to ensure rules are published
+  try {
+    await setDoc(doc(db, '_connection_test', 'status'), { connectedAt: Date.now(), client: 'CA Practice Suite' });
+  } catch (err) {
+    if (err.code === 'permission-denied' || (err.message && err.message.includes('permission'))) {
+      throw new Error("PERMISSION DENIED: Your Firebase Security Rules are blocking writes. Please click the 'Rules' tab in Firebase Console and set 'allow read, write: if true;' then click 'Publish'.");
+    }
+    throw new Error(`Firebase connection test failed: ${err.message}`);
+  }
+
   const { clients, gstWork, itWork, rocWork, tasks, invoices, inwardOutwardRecords, users, firmProfile } = fullData;
 
-  if (clients && clients.length) await syncClientsToFirebase(clients);
-  if (gstWork && gstWork.length) await syncGSTWorkToFirebase(gstWork);
-  if (itWork && itWork.length) await syncITWorkToFirebase(itWork);
-  if (rocWork && rocWork.length) await syncROCWorkToFirebase(rocWork);
-  if (tasks && tasks.length) await syncTasksToFirebase(tasks);
-  if (invoices && invoices.length) await syncInvoicesToFirebase(invoices);
-  if (inwardOutwardRecords && inwardOutwardRecords.length) await syncInwardOutwardToFirebase(inwardOutwardRecords);
-  if (users && users.length) await syncUsersToFirebase(users);
-  if (firmProfile) await syncFirmProfileToFirebase(firmProfile);
+  let totalUploaded = 0;
 
-  return true;
+  if (clients && clients.length) {
+    for (const c of clients) {
+      if (c.id) {
+        await setDoc(doc(db, COLLECTIONS.CLIENTS, c.id), c, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (tasks && tasks.length) {
+    for (const t of tasks) {
+      if (t.id) {
+        await setDoc(doc(db, COLLECTIONS.TASKS, t.id), t, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (gstWork && gstWork.length) {
+    for (const g of gstWork) {
+      if (g.id) {
+        await setDoc(doc(db, COLLECTIONS.GST, g.id), g, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (itWork && itWork.length) {
+    for (const i of itWork) {
+      if (i.id) {
+        await setDoc(doc(db, COLLECTIONS.IT, i.id), i, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (rocWork && rocWork.length) {
+    for (const r of rocWork) {
+      if (r.id) {
+        await setDoc(doc(db, COLLECTIONS.ROC, r.id), r, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (invoices && invoices.length) {
+    for (const inv of invoices) {
+      if (inv.id) {
+        await setDoc(doc(db, COLLECTIONS.INVOICES, inv.id), inv, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (inwardOutwardRecords && inwardOutwardRecords.length) {
+    for (const rec of inwardOutwardRecords) {
+      if (rec.id) {
+        await setDoc(doc(db, COLLECTIONS.INWARD_OUTWARD, rec.id), rec, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (users && users.length) {
+    for (const u of users) {
+      if (u.id) {
+        await setDoc(doc(db, COLLECTIONS.USERS, u.id), u, { merge: true });
+        totalUploaded++;
+      }
+    }
+  }
+
+  if (firmProfile) {
+    await setDoc(doc(db, COLLECTIONS.FIRM_PROFILE, 'profile'), firmProfile, { merge: true });
+    totalUploaded++;
+  }
+
+  return { success: true, count: totalUploaded };
 };
