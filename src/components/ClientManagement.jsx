@@ -24,7 +24,10 @@ export default function ClientManagement({
 }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const canAddOrDelete = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN';
+  const canAddOrDelete =
+    currentUser.role === 'SUPER_ADMIN' ||
+    currentUser.role === 'ADMIN' ||
+    currentUser.role === 'MANAGER';
 
   const filteredClients = clients.filter((c) => {
     const matchesSearch =

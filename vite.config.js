@@ -57,6 +57,7 @@ function centralDatabasePlugin() {
         partnerName: 'CA Rajesh Sharma'
       },
       evidenceDocuments: [],
+      inwardOutwardRecords: [],
       updatedAt: Date.now()
     };
 

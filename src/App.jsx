@@ -41,16 +41,20 @@ import {
 
 import {
   syncClientsToFirebase, subscribeToClientsFromFirebase,
+  saveSingleClientToFirebase, deleteSingleClientFromFirebase,
   syncGSTWorkToFirebase, subscribeToGSTWorkFromFirebase,
   syncITWorkToFirebase, subscribeToITWorkFromFirebase,
   syncTasksToFirebase, subscribeToTasksFromFirebase,
+  saveSingleTaskToFirebase, deleteSingleTaskFromFirebase,
   syncInvoicesToFirebase, subscribeToInvoicesFromFirebase,
   syncROCWorkToFirebase, subscribeToROCWorkFromFirebase,
   syncInwardOutwardToFirebase, subscribeToInwardOutwardFromFirebase,
+  saveSingleInwardToFirebase, deleteSingleInwardFromFirebase,
   syncUsersToFirebase, subscribeToUsersFromFirebase,
   syncFirmProfileToFirebase, subscribeToFirmProfileFromFirebase,
-  uploadAllDataToFirebase
+  uploadAllDataToFirebase, mergeListsById
 } from './services/firebaseService';
+import { isFirebaseConfigured } from './config/firebase';
 
 import {
   fetchCentralDatabase,
@@ -124,32 +128,44 @@ export default function App() {
     });
   };
 
-  const setFirmProfile = (profile) => {
-    setFirmProfileState(profile);
-    saveFirmProfile(profile);
-    syncFirmProfileToFirebase(profile);
-    syncToCentralServer({ firmProfile: profile });
+  const setFirmProfile = (dataOrUpdater) => {
+    setFirmProfileState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveFirmProfile(next);
+      syncFirmProfileToFirebase(next);
+      syncToCentralServer({ firmProfile: next });
+      return next;
+    });
   };
 
-  const setEvidenceDocuments = (docs) => {
-    setEvidenceDocumentsState(docs);
-    saveEvidenceDocuments(docs);
-    syncToCentralServer({ evidenceDocuments: docs });
+  const setEvidenceDocuments = (dataOrUpdater) => {
+    setEvidenceDocumentsState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveEvidenceDocuments(next);
+      syncToCentralServer({ evidenceDocuments: next });
+      return next;
+    });
   };
 
-  const setInwardOutwardRecords = (records) => {
-    setInwardOutwardRecordsState(records);
-    saveInwardOutwardRecords(records);
-    syncInwardOutwardToFirebase(records);
-    syncToCentralServer({ inwardOutwardRecords: records });
+  const setInwardOutwardRecords = (dataOrUpdater) => {
+    setInwardOutwardRecordsState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveInwardOutwardRecords(next);
+      syncInwardOutwardToFirebase(next);
+      syncToCentralServer({ inwardOutwardRecords: next });
+      return next;
+    });
   };
 
   // Sync to Storage and Central Server
-  const setUsers = (data) => {
-    setUsersState(data);
-    saveUsers(data);
-    syncUsersToFirebase(data);
-    syncToCentralServer({ users: data });
+  const setUsers = (dataOrUpdater) => {
+    setUsersState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveUsers(next);
+      syncUsersToFirebase(next);
+      syncToCentralServer({ users: next });
+      return next;
+    });
   };
   const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
 
@@ -165,49 +181,70 @@ export default function App() {
     saveIsLoggedIn(false);
   };
 
-  const setClients = (data) => {
-    setClientsState(data);
-    saveClients(data);
-    syncClientsToFirebase(data);
-    syncToCentralServer({ clients: data });
+  const setClients = (dataOrUpdater) => {
+    setClientsState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveClients(next);
+      syncClientsToFirebase(next);
+      syncToCentralServer({ clients: next });
+      return next;
+    });
   };
-  const setRemovedClients = (data) => {
-    setRemovedClientsState(data);
-    saveRemovedClients(data);
-    syncToCentralServer({ removedClients: data });
+  const setRemovedClients = (dataOrUpdater) => {
+    setRemovedClientsState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveRemovedClients(next);
+      syncToCentralServer({ removedClients: next });
+      return next;
+    });
   };
-  const setGstWork = (data) => {
-    setGstWorkState(data);
-    saveGSTWork(data);
-    syncGSTWorkToFirebase(data);
-    syncToCentralServer({ gstWork: data });
+  const setGstWork = (dataOrUpdater) => {
+    setGstWorkState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveGSTWork(next);
+      syncGSTWorkToFirebase(next);
+      syncToCentralServer({ gstWork: next });
+      return next;
+    });
   };
-  const setItWork = (data) => {
-    setItWorkState(data);
-    saveITWork(data);
-    syncITWorkToFirebase(data);
-    syncToCentralServer({ itWork: data });
+  const setItWork = (dataOrUpdater) => {
+    setItWorkState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveITWork(next);
+      syncITWorkToFirebase(next);
+      syncToCentralServer({ itWork: next });
+      return next;
+    });
   };
-  const setRocWork = (data) => {
-    setRocWorkState(data);
-    saveROCWork(data);
-    syncROCWorkToFirebase(data);
-    syncToCentralServer({ rocWork: data });
+  const setRocWork = (dataOrUpdater) => {
+    setRocWorkState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveROCWork(next);
+      syncROCWorkToFirebase(next);
+      syncToCentralServer({ rocWork: next });
+      return next;
+    });
   };
-  const setTasks = (data) => {
-    setTasksState(data);
-    saveTasks(data);
-    syncTasksToFirebase(data);
-    syncToCentralServer({ tasks: data });
+  const setTasks = (dataOrUpdater) => {
+    setTasksState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveTasks(next);
+      syncTasksToFirebase(next);
+      syncToCentralServer({ tasks: next });
+      return next;
+    });
   };
-  const setInvoices = (data) => {
-    setInvoicesState(data);
-    saveInvoices(data);
-    syncInvoicesToFirebase(data);
-    syncToCentralServer({ invoices: data });
+  const setInvoices = (dataOrUpdater) => {
+    setInvoicesState((prev) => {
+      const next = typeof dataOrUpdater === 'function' ? dataOrUpdater(prev) : dataOrUpdater;
+      saveInvoices(next);
+      syncInvoicesToFirebase(next);
+      syncToCentralServer({ invoices: next });
+      return next;
+    });
   };
 
-  // Central Database LAN Sync & Multi-User Polling
+  // Central Database LAN Sync & Multi-User Polling (Safe Merging)
   useEffect(() => {
     let isMounted = true;
 
@@ -216,44 +253,44 @@ export default function App() {
       if (res && res.success && res.data && isMounted) {
         const db = res.data;
         if (db.users && db.users.length > 0) {
-          setUsersState(db.users);
-          saveUsers(db.users);
+          setUsersState((prev) => {
+            const merged = mergeListsById(prev, db.users);
+            saveUsers(merged);
+            return merged;
+          });
         }
-        if (db.clients) {
-          setClientsState(db.clients);
-          saveClients(db.clients);
+        if (db.clients && db.clients.length > 0) {
+          setClientsState((prev) => {
+            const merged = mergeListsById(prev, db.clients);
+            saveClients(merged);
+            return merged;
+          });
         }
-        if (db.tasks) {
-          setTasksState(db.tasks);
-          saveTasks(db.tasks);
+        if (db.tasks && db.tasks.length > 0) {
+          setTasksState((prev) => {
+            const merged = mergeListsById(prev, db.tasks);
+            saveTasks(merged);
+            return merged;
+          });
         }
-        if (db.invoices) {
-          setInvoicesState(db.invoices);
-          saveInvoices(db.invoices);
+        if (db.inwardOutwardRecords && db.inwardOutwardRecords.length > 0) {
+          setInwardOutwardRecordsState((prev) => {
+            const merged = mergeListsById(prev, db.inwardOutwardRecords);
+            saveInwardOutwardRecords(merged);
+            return merged;
+          });
         }
-        if (db.gstWork) {
-          setGstWorkState(db.gstWork);
-          saveGSTWork(db.gstWork);
-        }
-        if (db.itWork) {
-          setItWorkState(db.itWork);
-          saveITWork(db.itWork);
-        }
-        if (db.rocWork) {
-          setRocWorkState(db.rocWork);
-          saveROCWork(db.rocWork);
-        }
-        if (db.firmProfile) {
+        if (db.invoices) setInvoicesState((prev) => mergeListsById(prev, db.invoices));
+        if (db.gstWork) setGstWorkState((prev) => mergeListsById(prev, db.gstWork));
+        if (db.itWork) setItWorkState((prev) => mergeListsById(prev, db.itWork));
+        if (db.rocWork) setRocWorkState((prev) => mergeListsById(prev, db.rocWork));
+        if (db.firmProfile && db.firmProfile.firmName) {
           setFirmProfileState(db.firmProfile);
           saveFirmProfile(db.firmProfile);
         }
         if (db.evidenceDocuments) {
           setEvidenceDocumentsState(db.evidenceDocuments);
           saveEvidenceDocuments(db.evidenceDocuments);
-        }
-        if (db.inwardOutwardRecords) {
-          setInwardOutwardRecordsState(db.inwardOutwardRecords);
-          saveInwardOutwardRecords(db.inwardOutwardRecords);
         }
         lastSyncedAtRef.current = res.updatedAt || Date.now();
       }
@@ -268,16 +305,16 @@ export default function App() {
         const res = await fetchCentralDatabase();
         if (res && res.success && res.data && isMounted) {
           const db = res.data;
-          if (db.users) setUsersState(db.users);
-          if (db.clients) setClientsState(db.clients);
-          if (db.tasks) setTasksState(db.tasks);
-          if (db.invoices) setInvoicesState(db.invoices);
-          if (db.gstWork) setGstWorkState(db.gstWork);
-          if (db.itWork) setItWorkState(db.itWork);
-          if (db.rocWork) setRocWorkState(db.rocWork);
-          if (db.firmProfile) setFirmProfileState(db.firmProfile);
+          if (db.users) setUsersState((prev) => mergeListsById(prev, db.users));
+          if (db.clients) setClientsState((prev) => mergeListsById(prev, db.clients));
+          if (db.tasks) setTasksState((prev) => mergeListsById(prev, db.tasks));
+          if (db.inwardOutwardRecords) setInwardOutwardRecordsState((prev) => mergeListsById(prev, db.inwardOutwardRecords));
+          if (db.invoices) setInvoicesState((prev) => mergeListsById(prev, db.invoices));
+          if (db.gstWork) setGstWorkState((prev) => mergeListsById(prev, db.gstWork));
+          if (db.itWork) setItWorkState((prev) => mergeListsById(prev, db.itWork));
+          if (db.rocWork) setRocWorkState((prev) => mergeListsById(prev, db.rocWork));
+          if (db.firmProfile && db.firmProfile.firmName) setFirmProfileState(db.firmProfile);
           if (db.evidenceDocuments) setEvidenceDocumentsState(db.evidenceDocuments);
-          if (db.inwardOutwardRecords) setInwardOutwardRecordsState(db.inwardOutwardRecords);
           lastSyncedAtRef.current = res.updatedAt;
         }
       }
@@ -289,17 +326,118 @@ export default function App() {
     };
   }, []);
 
-  // Subscribe to Firebase Firestore if connected
+  // Subscribe to Firebase Firestore if connected (Merge-Never-Wipe)
   useEffect(() => {
-    const unsubClients = subscribeToClientsFromFirebase((data) => setClientsState(data));
-    const unsubGST = subscribeToGSTWorkFromFirebase((data) => setGstWorkState(data));
-    const unsubIT = subscribeToITWorkFromFirebase((data) => setItWorkState(data));
-    const unsubTasks = subscribeToTasksFromFirebase((data) => setTasksState(data));
-    const unsubInvoices = subscribeToInvoicesFromFirebase((data) => setInvoicesState(data));
-    const unsubROC = subscribeToROCWorkFromFirebase((data) => setRocWorkState(data));
-    const unsubInward = subscribeToInwardOutwardFromFirebase((data) => setInwardOutwardRecordsState(data));
-    const unsubUsers = subscribeToUsersFromFirebase((data) => setUsersState(data));
-    const unsubProfile = subscribeToFirmProfileFromFirebase((data) => setFirmProfileState(data));
+    const unsubClients = subscribeToClientsFromFirebase((cloudClients) => {
+      if (cloudClients && cloudClients.length > 0) {
+        setClientsState((localClients) => {
+          const merged = mergeListsById(localClients, cloudClients);
+          saveClients(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubTasks = subscribeToTasksFromFirebase((cloudTasks) => {
+      if (cloudTasks && cloudTasks.length > 0) {
+        setTasksState((localTasks) => {
+          const merged = mergeListsById(localTasks, cloudTasks);
+          saveTasks(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubInward = subscribeToInwardOutwardFromFirebase((cloudInward) => {
+      if (cloudInward && cloudInward.length > 0) {
+        setInwardOutwardRecordsState((localInward) => {
+          const merged = mergeListsById(localInward, cloudInward);
+          saveInwardOutwardRecords(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubGST = subscribeToGSTWorkFromFirebase((cloudGST) => {
+      if (cloudGST && cloudGST.length > 0) {
+        setGstWorkState((local) => {
+          const merged = mergeListsById(local, cloudGST);
+          saveGSTWork(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubIT = subscribeToITWorkFromFirebase((cloudIT) => {
+      if (cloudIT && cloudIT.length > 0) {
+        setItWorkState((local) => {
+          const merged = mergeListsById(local, cloudIT);
+          saveITWork(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubROC = subscribeToROCWorkFromFirebase((cloudROC) => {
+      if (cloudROC && cloudROC.length > 0) {
+        setRocWorkState((local) => {
+          const merged = mergeListsById(local, cloudROC);
+          saveROCWork(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubInvoices = subscribeToInvoicesFromFirebase((cloudInvoices) => {
+      if (cloudInvoices && cloudInvoices.length > 0) {
+        setInvoicesState((local) => {
+          const merged = mergeListsById(local, cloudInvoices);
+          saveInvoices(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubUsers = subscribeToUsersFromFirebase((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        setUsersState((local) => {
+          const merged = mergeListsById(local, cloudUsers);
+          saveUsers(merged);
+          return merged;
+        });
+      }
+    });
+
+    const unsubProfile = subscribeToFirmProfileFromFirebase((cloudProfile) => {
+      if (cloudProfile && cloudProfile.firmName) {
+        setFirmProfileState(cloudProfile);
+        saveFirmProfile(cloudProfile);
+      }
+    });
+
+    // Auto-sync existing local data to Firebase Cloud in background
+    if (isFirebaseConfigured) {
+      const timer = setTimeout(() => {
+        syncClientsToFirebase(getClients());
+        syncTasksToFirebase(getTasks());
+        syncInwardOutwardToFirebase(getInwardOutwardRecords());
+        syncUsersToFirebase(getUsers());
+        syncFirmProfileToFirebase(getFirmProfile());
+      }, 2500);
+
+      return () => {
+        clearTimeout(timer);
+        if (unsubClients) unsubClients();
+        if (unsubGST) unsubGST();
+        if (unsubIT) unsubIT();
+        if (unsubTasks) unsubTasks();
+        if (unsubInvoices) unsubInvoices();
+        if (unsubROC) unsubROC();
+        if (unsubInward) unsubInward();
+        if (unsubUsers) unsubUsers();
+        if (unsubProfile) unsubProfile();
+      };
+    }
 
     return () => {
       if (unsubClients) unsubClients();
@@ -334,7 +472,11 @@ export default function App() {
     : itWork;
 
   const handleAddClient = (newClient) => {
-    setClients([newClient, ...clients]);
+    setClients((prev) => {
+      const merged = [newClient, ...prev.filter(c => c.id !== newClient.id)];
+      saveSingleClientToFirebase(newClient);
+      return merged;
+    });
   };
 
   const handleRemoveClient = (clientId, reason) => {
@@ -348,8 +490,9 @@ export default function App() {
       removedDate: new Date().toISOString().split('T')[0]
     };
 
-    setClients(clients.filter(c => c.id !== clientId));
-    setRemovedClients([removedItem, ...removedClients]);
+    setRemovedClients((prev) => [removedItem, ...prev]);
+    setClients((prev) => prev.filter(c => c.id !== clientId));
+    deleteSingleClientFromFirebase(clientId);
   };
 
   const handleRestoreClient = (clientId) => {

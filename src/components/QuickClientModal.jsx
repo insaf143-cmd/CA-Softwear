@@ -25,28 +25,38 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const cleanId = form.clientId.trim().toUpperCase() || `CL-${Math.floor(100 + Math.random() * 900)}`;
+    const cleanId = (form.clientId || '').trim().toUpperCase() || `CL-${Math.floor(1001 + Math.random() * 8999)}`;
+    const cleanName = (form.name || '').trim();
+    if (!cleanName) {
+      alert('Please enter Client / Legal Entity Name.');
+      return;
+    }
+
+    const cleanPan = (form.pan || '').trim().toUpperCase() || 'PENDING';
+    const cleanGstin = (form.gstin || '').trim().toUpperCase();
+    const cleanTan = (form.tan || '').trim().toUpperCase();
+
     const newClient = {
       id: cleanId,
-      name: form.name,
-      tradeName: form.tradeName || form.name,
-      constitution: form.constitution,
-      pan: form.pan.toUpperCase(),
-      gstin: form.gstin.toUpperCase(),
-      tan: form.tan.toUpperCase(),
+      name: cleanName,
+      tradeName: (form.tradeName || '').trim() || cleanName,
+      constitution: form.constitution || 'Private Limited Company',
+      pan: cleanPan,
+      gstin: cleanGstin || 'N/A',
+      tan: cleanTan || 'N/A',
       cin: 'Pending Registration',
-      email: form.email,
-      phone: form.phone,
-      authorizedPerson: form.authorizedPerson || form.name,
-      address: form.address,
-      assignedStaff: form.assignedStaff,
-      category: form.category,
-      turnover: form.turnover,
+      email: form.email || '',
+      phone: form.phone || '',
+      authorizedPerson: form.authorizedPerson || cleanName,
+      address: form.address || '',
+      assignedStaff: form.assignedStaff || staff[0]?.id || 'ADMIN01',
+      category: form.category || 'Corporate',
+      turnover: form.turnover || '₹1.0 Cr',
       bankDetails: { bank: 'HDFC Bank', acNo: '001299881122', ifsc: 'HDFC0000240', branch: 'Main Branch' },
       portalCredentials: {
-        gstUser: form.gstUser || `${form.pan}_GST`,
+        gstUser: form.gstUser || `${cleanPan}_GST`,
         gstPass: form.gstPass || 'GstPass#2026',
-        itUser: form.pan.toUpperCase(),
+        itUser: cleanPan,
         itPass: form.itPass || 'ItPass#2026'
       },
       directors: []

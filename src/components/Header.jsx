@@ -174,8 +174,8 @@ export default function Header({
           <span className="hidden md:inline">Tax Calc</span>
         </button>
 
-        {/* Add Client Button (Only for Admin / Super Admin) */}
-        {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
+        {/* Add Client Button (Admin & Manager) */}
+        {isManagerOrAdmin && (
           <button
             onClick={onOpenNewClient}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition"

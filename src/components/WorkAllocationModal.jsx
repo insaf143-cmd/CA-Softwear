@@ -17,19 +17,26 @@ import {
 export default function WorkAllocationModal({
   onClose,
   onAllocateWork,
-  clients,
-  staff,
-  currentUser
+  clients = [],
+  staff = [],
+  currentUser = {}
 }) {
-  const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
-  const selectedClient = clients.find((c) => c.id === selectedClientId) || clients[0] || {};
+  const hasClients = Array.isArray(clients) && clients.length > 0;
+  const [selectedClientId, setSelectedClientId] = useState(hasClients ? clients[0]?.id : '__custom__');
+  const [customClientName, setCustomClientName] = useState('');
+  const [customPan, setCustomPan] = useState('');
+  const [customGstin, setCustomGstin] = useState('');
+
+  const selectedClient = hasClients && selectedClientId !== '__custom__'
+    ? clients.find((c) => c.id === selectedClientId) || clients[0] || {}
+    : {};
 
   const [formData, setFormData] = useState({
     jobNumber: `JOB-${new Date().getFullYear()}-${Math.floor(101 + Math.random() * 899)}`,
     serviceLine: 'Indirect Taxation (GST)',
     title: '',
     department: 'GST Compliance',
-    assignedTo: staff[2]?.id || staff[0]?.id || '',
+    assignedTo: staff[1]?.id || staff[0]?.id || '',
     finishingDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
     priority: 'High',
     fy: '2025-26',
@@ -74,22 +81,42 @@ export default function WorkAllocationModal({
       return;
     }
 
-    const assignee = staff.find((s) => s.id === formData.assignedTo) || { name: 'Staff Member' };
+    const isCustom = selectedClientId === '__custom__' || !hasClients;
+    const finalClientName = isCustom ? customClientName.trim() : (selectedClient.name || '').trim();
+
+    if (!finalClientName) {
+      alert('Please select an existing client or enter the Client / Entity Name.');
+      return;
+    }
+
+    const finalClientId = isCustom
+      ? `CL-${Math.floor(100 + Math.random() * 900)}`
+      : (selectedClient.id || `CL-${Date.now().toString().slice(-4)}`);
+
+    const finalPan = isCustom
+      ? (customPan.trim().toUpperCase() || 'N/A')
+      : (selectedClient.pan || 'N/A');
+
+    const finalGstin = isCustom
+      ? (customGstin.trim().toUpperCase() || 'N/A')
+      : (selectedClient.gstin || 'N/A');
+
+    const assignee = staff.find((s) => s.id === formData.assignedTo) || { name: staff[0]?.name || 'Staff Member' };
 
     const newWorkItem = {
       id: `CA-WRK-${Date.now().toString().slice(-4)}`,
       jobNumber: formData.jobNumber.trim().toUpperCase() || `JOB-${Date.now().toString().slice(-4)}`,
       serviceLine: formData.serviceLine || 'Audit & Assurance',
       title: formData.title.trim(),
-      clientId: selectedClient.id,
-      clientName: selectedClient.name,
-      clientPan: selectedClient.pan || 'N/A',
-      clientGstin: selectedClient.gstin || 'N/A',
+      clientId: finalClientId,
+      clientName: finalClientName,
+      clientPan: finalPan,
+      clientGstin: finalGstin,
       department: formData.department,
       category: formData.department.includes('GST') ? 'GST' : formData.department.includes('Income Tax') ? 'Income Tax' : 'Audit',
-      assignedTo: formData.assignedTo,
+      assignedTo: formData.assignedTo || staff[0]?.id || 'ADMIN01',
       assignedToName: assignee.name,
-      allocatedBy: `${currentUser.name} (${currentUser.role})`,
+      allocatedBy: `${currentUser?.name || 'Admin'} (${currentUser?.role || 'ADMIN'})`,
       allocatedDate: new Date().toISOString().split('T')[0],
       finishingDate: formData.finishingDate,
       dueDate: formData.finishingDate,
@@ -210,35 +237,93 @@ export default function WorkAllocationModal({
           </div>
 
           {/* Client Selection & Auto Client Info Card */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                Select Client <span className="text-emerald-400">*</span>
-              </label>
-              <select
-                value={selectedClientId}
-                onChange={(e) => setSelectedClientId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.pan})
-                  </option>
-                ))}
-              </select>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Select Client <span className="text-emerald-400">*</span>
+                </label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                >
+                  {hasClients && clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.pan ? `(${c.pan})` : ''}
+                    </option>
+                  ))}
+                  <option value="__custom__">+ Enter Client Manually / Direct Assignment</option>
+                </select>
+              </div>
+
+              {/* Client Info Pill or Manual Helper */}
+              {selectedClientId !== '__custom__' && hasClients ? (
+                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex flex-col justify-center text-[11px] space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Client ID:</span>
+                    <span className="font-mono text-slate-300 font-bold">{selectedClient.id || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">PAN:</span>
+                    <span className="font-mono text-emerald-400 font-bold">{selectedClient.pan || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">GSTIN:</span>
+                    <span className="font-mono text-cyan-400 font-bold truncate max-w-[150px]">{selectedClient.gstin || 'N/A'}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-slate-800/40 border border-dashed border-slate-700 flex items-center justify-center text-[11px] text-slate-400">
+                  <span>Enter the client's business or individual name below.</span>
+                </div>
+              )}
             </div>
 
-            {/* Client Info Pill */}
-            <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex flex-col justify-center text-[11px] space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-400">PAN:</span>
-                <span className="font-mono text-emerald-400 font-bold">{selectedClient.pan || 'N/A'}</span>
+            {/* Manual Client Entry Fields (if custom or no clients registered yet) */}
+            {(selectedClientId === '__custom__' || !hasClients) && (
+              <div className="p-3.5 rounded-2xl bg-slate-800/40 border border-emerald-500/30 space-y-3 animate-fade-in">
+                <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5" />
+                  <span>Manual Client Assignment Details</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-1">
+                    <label className="block text-slate-400 text-[11px] mb-1">Client / Company Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customClientName}
+                      onChange={(e) => setCustomClientName(e.target.value)}
+                      placeholder="e.g. Acme Industries Ltd"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">PAN Number</label>
+                    <input
+                      type="text"
+                      maxLength="10"
+                      value={customPan}
+                      onChange={(e) => setCustomPan(e.target.value.toUpperCase())}
+                      placeholder="ABCDE1234F"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-emerald-400 font-mono text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">GSTIN (Optional)</label>
+                    <input
+                      type="text"
+                      maxLength="15"
+                      value={customGstin}
+                      onChange={(e) => setCustomGstin(e.target.value.toUpperCase())}
+                      placeholder="27ABCDE1234F1Z5"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-cyan-400 font-mono text-xs focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">GSTIN:</span>
-                <span className="font-mono text-cyan-400 font-bold truncate max-w-[150px]">{selectedClient.gstin || 'N/A'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Department & Statutory Section */}

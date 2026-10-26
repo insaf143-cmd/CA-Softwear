@@ -1,58 +1,58 @@
 {
   "users": [
     {
-      "id": "ADMIN01",
-      "name": "Admin User",
+      "designation": "Managing Partner / Admin",
       "email": "admin@cadesk.in",
       "password": "admin",
+      "id": "ADMIN01",
+      "allocatedClientIds": [],
       "role": "SUPER_ADMIN",
+      "name": "Admin User",
       "status": "Active",
-      "designation": "Managing Partner / Admin",
-      "mobile": "+91 99999 00000",
-      "allocatedClientIds": []
+      "mobile": "+91 99999 00000"
     },
     {
-      "id": "RABEEB",
-      "name": "RABEEB",
-      "email": "rabeeb@cadesk.in",
-      "password": "123",
-      "role": "MANAGER",
-      "designation": "Staff Member",
       "mobile": "",
       "allocatedClientIds": [],
-      "status": "Active"
+      "designation": "Staff Member",
+      "role": "MANAGER",
+      "status": "Active",
+      "id": "RABEEB",
+      "email": "rabeeb@cadesk.in",
+      "name": "RABEEB",
+      "password": "123"
     }
   ],
   "clients": [
     {
-      "id": "CL177",
-      "name": "STEELWUD",
-      "tradeName": "STEELWUD",
-      "constitution": "Limited Liability Partnership (LLP)",
-      "pan": "ACXFS0044F",
-      "gstin": "33ACXFS0044F1Z4",
-      "tan": "",
+      "assignedStaff": "ADMIN01",
       "cin": "Pending Registration",
-      "email": "",
+      "tan": "",
+      "turnover": "₹1.0 Cr",
+      "pan": "ACXFS0044F",
+      "category": "Corporate",
       "phone": "",
       "authorizedPerson": "ASHRAF",
-      "address": "",
-      "assignedStaff": "ADMIN01",
-      "category": "Corporate",
-      "turnover": "₹1.0 Cr",
       "bankDetails": {
-        "bank": "HDFC Bank",
-        "acNo": "001299881122",
         "ifsc": "HDFC0000240",
-        "branch": "Main Branch"
+        "branch": "Main Branch",
+        "bank": "HDFC Bank",
+        "acNo": "001299881122"
       },
+      "address": "",
+      "gstin": "33ACXFS0044F1Z4",
+      "id": "CL177",
+      "email": "",
+      "directors": [],
+      "name": "STEELWUD",
+      "tradeName": "STEELWUD",
       "portalCredentials": {
-        "gstUser": "ACXFS0044F_GST",
+        "itPass": "ItPass#2026",
         "gstPass": "GstPass#2026",
-        "itUser": "ACXFS0044F",
-        "itPass": "ItPass#2026"
+        "gstUser": "ACXFS0044F_GST",
+        "itUser": "ACXFS0044F"
       },
-      "directors": []
+      "constitution": "Limited Liability Partnership (LLP)"
     }
   ],
   "removedClients": [],
@@ -61,47 +61,47 @@
   "rocWork": [],
   "tasks": [
     {
-      "id": "CA-WRK-7513",
-      "title": "GST",
-      "clientId": "CL177",
-      "clientName": "STEELWUD",
-      "clientPan": "ACXFS0044F",
-      "clientGstin": "33ACXFS0044F1Z4",
-      "department": "GST Compliance",
-      "category": "GST",
-      "assignedTo": "RABEEB",
-      "assignedToName": "RABEEB",
       "allocatedBy": "RABEEB (MANAGER)",
+      "title": "GST",
+      "department": "GST Compliance",
       "allocatedDate": "2026-10-10",
-      "finishingDate": "2026-10-17",
-      "dueDate": "2026-10-17",
-      "priority": "High",
-      "status": "Completed",
-      "fy": "2025-26",
-      "ay": "2026-27",
-      "statutorySection": "Section 39 / Rule 61 (GSTR-3B)",
-      "workDetails": "Standard compliance and verification required.",
-      "initialRemarks": "Allocated per annual engagement mandate.",
-      "estimatedHours": "6 hrs",
-      "feeQuote": "₹10,000",
+      "clientGstin": "33ACXFS0044F1Z4",
       "transferHistory": [],
+      "clientId": "CL177",
+      "assignedToName": "RABEEB",
+      "fy": "2025-26",
+      "category": "GST",
+      "workDetails": "Standard compliance and verification required.",
+      "statutorySection": "Section 39 / Rule 61 (GSTR-3B)",
+      "initialRemarks": "Allocated per annual engagement mandate.",
+      "feeQuote": "₹10,000",
+      "assignedTo": "RABEEB",
+      "clientPan": "ACXFS0044F",
+      "finishingDate": "2026-10-17",
       "approvalDetails": {
         "approvedAt": "2026-10-10",
-        "approvedBy": "RABEEB (MANAGER)",
-        "approvalRemarks": "Reviewed work papers and reconciliations. Found in order and approved for partner sign-off."
-      }
+        "approvalRemarks": "Reviewed work papers and reconciliations. Found in order and approved for partner sign-off.",
+        "approvedBy": "RABEEB (MANAGER)"
+      },
+      "estimatedHours": "6 hrs",
+      "id": "CA-WRK-7513",
+      "clientName": "STEELWUD",
+      "ay": "2026-27",
+      "priority": "High",
+      "status": "Completed",
+      "dueDate": "2026-10-17"
     }
   ],
   "invoices": [],
   "firmProfile": {
-    "firmName": "M/s. SK ASSOCIATES",
+    "partnerName": "SHAMSUDHEEN",
+    "gstin": "",
     "tagline": "COST ACCOUNTS",
     "frn": "",
-    "gstin": "",
-    "address": "",
-    "phone": "+91 98765 43210",
     "email": "contact@sharma-ca.com",
-    "partnerName": "SHAMSUDHEEN"
+    "phone": "+91 98765 43210",
+    "firmName": "M/s. SK ASSOCIATES",
+    "address": ""
   },
   "evidenceDocuments": [
     {
@@ -122,5 +122,89 @@
       "uploadedById": "ADMIN01"
     }
   ],
-  "updatedAt": 1791634989156
+  "updatedAt": 1792996840930,
+  "inwardOutwardRecords": [
+    {
+      "id": "INW-2026-004",
+      "date": "2026-10-26",
+      "time": "12:09 PM",
+      "clientId": "CL177",
+      "clientName": "STEELWUD",
+      "category": "Books & Registers",
+      "description": "hxxzxkj",
+      "quantity": "1 File / Bundle",
+      "handedBy": "STEELWUD",
+      "handedByPhone": "",
+      "receivedBy": "Admin User",
+      "rackLocation": "Main Records Rack - Shelf A",
+      "status": "In Custody",
+      "remarks": "",
+      "type": "Inward",
+      "outwardDetails": null
+    },
+    {
+      "description": "Physical General Ledger, Cash Book, and Purchase Invoices Box (FY 2025-26)",
+      "handedByPhone": "+91 98220 33445",
+      "status": "In Custody",
+      "handedBy": "Mr. Deepak Verma (Accounts Manager, Apex)",
+      "type": "Inward",
+      "quantity": "2 Box Files & 1 Pen Drive",
+      "receivedBy": "Rohan Gupta (Article Assistant)",
+      "clientName": "Apex Infotech Private Limited",
+      "date": "2026-08-01",
+      "outwardDetails": null,
+      "id": "INW-2026-001",
+      "time": "11:30 AM",
+      "clientId": "CL001",
+      "rackLocation": "Rack A-2 / Shelf 3",
+      "remarks": "Original tax invoices with bank statements for Q1 & Q2",
+      "category": "Books & Registers"
+    },
+    {
+      "date": "2026-08-03",
+      "time": "03:15 PM",
+      "clientId": "CL002",
+      "description": "Class 3 Digital Signature Certificate (ePass2003) of Proprietor Shri Mahavir Jain",
+      "status": "Returned",
+      "outwardDetails": {
+        "time": "04:45 PM",
+        "acknowledgmentRemarks": "DSC token tested and returned safely in sealed envelope",
+        "date": "2026-08-06",
+        "courierDetails": "-",
+        "outwardId": "OUT-2026-001",
+        "receivedByClient": "Shri Mahavir Jain (In Person)",
+        "dispatchedBy": "Priya Nair",
+        "mode": "Hand Delivery",
+        "clientPhone": "+91 98210 55667"
+      },
+      "category": "DSC Token",
+      "rackLocation": "Vault Locker 1 / Safe",
+      "handedByPhone": "+91 98210 55667",
+      "id": "INW-2026-002",
+      "clientName": "Mahavir Textiles & Traders",
+      "remarks": "Needed for GST Portal login and revocation verification",
+      "receivedBy": "Priya Nair (GST Specialist)",
+      "handedBy": "Shri Mahavir Jain",
+      "type": "Inward",
+      "quantity": "1 USB Token with PIN envelope"
+    },
+    {
+      "type": "Inward",
+      "quantity": "1 Sealed Envelope (52 Pages)",
+      "handedBy": "Courier (Blue Dart Waybill #88291039)",
+      "status": "In Custody",
+      "remarks": "For MCA Form 8 charge creation and title verification",
+      "id": "INW-2026-003",
+      "category": "Property & Title Deeds",
+      "description": "Original Project Joint Venture Agreement & RERA sanction copies",
+      "clientId": "CL004",
+      "handedByPhone": "022-26543210",
+      "date": "2026-08-05",
+      "outwardDetails": null,
+      "clientName": "Skyline Builders & Developers LLP",
+      "time": "12:00 PM",
+      "receivedBy": "CA Ananya Verma",
+      "rackLocation": "Partner Chamber Cabinet C"
+    }
+  ]
 }

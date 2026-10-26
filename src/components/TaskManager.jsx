@@ -26,6 +26,7 @@ import WorkAllocationModal from './WorkAllocationModal';
 import WorkSubmitModal from './WorkSubmitModal';
 import WorkApprovalModal from './WorkApprovalModal';
 import WorkDetailsModal from './WorkDetailsModal';
+import { saveSingleTaskToFirebase } from '../services/firebaseService';
 
 export default function TaskManager({
   tasks,
@@ -104,59 +105,73 @@ export default function TaskManager({
 
   // --- ACTIONS ---
 
-  // Admin Allocates New Work
+  // Admin / Manager Allocates New Work
   const handleAllocateWork = (newWork) => {
-    setTasks([newWork, ...tasks]);
+    setTasks((prev) => [newWork, ...prev.filter((t) => t.id !== newWork.id)]);
+    saveSingleTaskToFirebase(newWork);
   };
 
   // User starts working on allocated task
   const handleStartWork = (workId) => {
-    setTasks(
-      tasks.map((t) =>
-        t.id === workId ? { ...t, status: 'In Progress' } : t
-      )
+    let updatedItem = null;
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === workId) {
+          updatedItem = { ...t, status: 'In Progress' };
+          return updatedItem;
+        }
+        return t;
+      })
     );
+    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
   // User submits finished work for manager approval
   const handleSubmitWork = (workId, submissionData) => {
-    setTasks(
-      tasks.map((t) => {
+    let updatedItem = null;
+    setTasks((prev) =>
+      prev.map((t) => {
         if (t.id === workId) {
-          return {
+          updatedItem = {
             ...t,
             status: 'Submitted for Approval',
             submissionDetails: submissionData
           };
+          return updatedItem;
         }
         return t;
       })
     );
+    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
   // Manager approves work -> marked Completed
   const handleApproveWork = (workId, approvalData) => {
-    setTasks(
-      tasks.map((t) => {
+    let updatedItem = null;
+    setTasks((prev) =>
+      prev.map((t) => {
         if (t.id === workId) {
-          return {
+          updatedItem = {
             ...t,
             status: 'Completed',
             approvalDetails: approvalData
           };
+          return updatedItem;
         }
         return t;
       })
     );
+    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
   // Manager rejects / does not approve -> transfers to next department
   const handleTransferWork = (workId, transferData) => {
-    setTasks(
-      tasks.map((t) => {
+    let updatedItem = null;
+    setTasks((prev) =>
+      prev.map((t) => {
         if (t.id === workId) {
           const currentHistory = t.transferHistory || [];
-          return {
+          updatedItem = {
             ...t,
             department: transferData.nextDepartment,
             assignedTo: transferData.nextAssigneeId,
@@ -166,19 +181,27 @@ export default function TaskManager({
             status: 'Transferred',
             transferHistory: [...currentHistory, transferData.transferRecord]
           };
+          return updatedItem;
         }
         return t;
       })
     );
+    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
   // Reopen or reverse task if necessary
   const handleReopenTask = (workId) => {
-    setTasks(
-      tasks.map((t) =>
-        t.id === workId ? { ...t, status: 'In Progress' } : t
-      )
+    let updatedItem = null;
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === workId) {
+          updatedItem = { ...t, status: 'In Progress' };
+          return updatedItem;
+        }
+        return t;
+      })
     );
+    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
   const columns = [

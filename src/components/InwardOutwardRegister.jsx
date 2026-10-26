@@ -26,6 +26,7 @@ import {
   Receipt,
   FileCheck
 } from 'lucide-react';
+import { saveSingleInwardToFirebase } from '../services/firebaseService';
 
 export default function InwardOutwardRegister({
   records = [],
@@ -136,39 +137,61 @@ export default function InwardOutwardRegister({
 
   // Handle Client Selection in Inward Modal
   const handleClientChange = (clientId) => {
+    if (!clientId) {
+      setInwardForm(prev => ({
+        ...prev,
+        clientId: ''
+      }));
+      return;
+    }
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      setInwardForm({
-        ...inwardForm,
+      setInwardForm(prev => ({
+        ...prev,
         clientId: client.id,
         clientName: client.name,
-        handedBy: client.contactPerson || client.name,
+        handedBy: client.authorizedPerson || client.contactPerson || client.name,
         handedByPhone: client.phone || ''
-      });
+      }));
     }
   };
 
   // Submit Inward Entry
   const handleSaveInward = (e) => {
     e.preventDefault();
-    if (!inwardForm.clientName || !inwardForm.description) {
+    const cleanClientName = (inwardForm.clientName || '').trim();
+    const cleanDesc = (inwardForm.description || '').trim();
+
+    if (!cleanClientName || !cleanDesc) {
       alert('Please fill Client Name and Material Description.');
       return;
     }
 
+    const year = new Date().getFullYear();
+    const uniqueSeq = Date.now().toString().slice(-4);
+    const finalId = inwardForm.id && inwardForm.id.trim() 
+      ? inwardForm.id.trim() 
+      : `INW-${year}-${uniqueSeq}`;
+
     const newRecord = {
       ...inwardForm,
+      id: finalId,
+      clientName: cleanClientName,
+      description: cleanDesc,
       type: 'Inward',
+      status: 'In Custody',
       outwardDetails: null
     };
 
-    const updated = [newRecord, ...records];
+    const updated = [newRecord, ...records.filter((r) => r.id !== newRecord.id)];
     setRecords(updated);
+    saveSingleInwardToFirebase(newRecord);
     setShowInwardModal(false);
 
-    // Reset Form
+    // Reset Form for next inward
+    const nextSeq = Math.floor(101 + Math.random() * 898);
     setInwardForm({
-      id: `INW-${new Date().getFullYear()}-${String(records.length + 2).padStart(3, '0')}`,
+      id: `INW-${year}-${nextSeq}`,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       clientId: '',
@@ -210,6 +233,9 @@ export default function InwardOutwardRegister({
 
     setRecords(updated);
     const completedRecord = updated.find(r => r.id === outwardingRecord.id);
+    if (completedRecord) {
+      saveSingleInwardToFirebase(completedRecord);
+    }
     setOutwardingRecord(null);
 
     // Prompt to print delivery challan
