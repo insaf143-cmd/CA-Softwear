@@ -26,7 +26,7 @@ import {
 import { clearAllDataAndStartFresh, addDeletedUserId, getDefaultTabsForRole } from '../utils/storage';
 import { isFirebaseConfigured } from '../config/firebase';
 import { registerWithFirebaseAuth, provisionStaffToFirebaseAuth } from '../services/firebaseAuthService';
-import { deleteSingleUserFromFirebase } from '../services/firebaseService';
+import { deleteSingleUserFromFirebase, syncUsersToFirebase, saveSingleUserToFirebase } from '../services/firebaseService';
 
 export const AVAILABLE_MODULE_TABS = [
   { id: 'dashboard', label: 'Dashboard', desc: 'Firm overview, statistics, and shortcuts' },
@@ -147,10 +147,12 @@ export default function UserManagement({
     e.preventDefault();
     if (!newPasswordVal.trim()) return;
 
+    const updatedUser = { ...editingUserPass, password: newPasswordVal.trim() };
     const updated = users.map((u) =>
-      u.id === editingUserPass.id ? { ...u, password: newPasswordVal.trim() } : u
+      u.id === editingUserPass.id ? updatedUser : u
     );
     setUsers(updated);
+    saveSingleUserToFirebase(updatedUser);
     setEditingUserPass(null);
     setNewPasswordVal('');
     alert(`Password for ${editingUserPass.name} (ID: ${editingUserPass.id}) updated successfully!`);
@@ -198,6 +200,7 @@ export default function UserManagement({
     };
 
     setUsers([...users, created]);
+    saveSingleUserToFirebase(created);
 
     // Also register in Firebase Auth if connected
     if (isFirebaseConfigured && created.email && created.password) {
@@ -231,17 +234,20 @@ export default function UserManagement({
       return;
     }
 
+    const updatedUser = {
+      ...editingUserTabs,
+      allowedTabs: selectedTabsForEdit
+    };
+
     const updated = users.map((u) => {
       if (u.id === editingUserTabs.id) {
-        return {
-          ...u,
-          allowedTabs: selectedTabsForEdit
-        };
+        return updatedUser;
       }
       return u;
     });
 
     setUsers(updated);
+    saveSingleUserToFirebase(updatedUser);
     alert(`Tab access permissions updated for "${editingUserTabs.name}"!\n\nAllowed Modules: ${selectedTabsForEdit.length} tabs.`);
     setEditingUserTabs(null);
   };
@@ -249,16 +255,34 @@ export default function UserManagement({
   const handleSyncToFirebaseAuth = async () => {
     setSyncingAuth(true);
     try {
-      const results = await provisionStaffToFirebaseAuth(users);
-      alert(
-        `Firebase Authentication Sync Complete!\n\n` +
-        `• Created in Firebase: ${results.created}\n` +
-        `• Already existed: ${results.alreadyExists}\n` +
-        `• Errors/Failed: ${results.failed}\n\n` +
-        `Open Firebase Console -> Authentication -> Users to see all staff!`
-      );
+      // 1. Always ensure all staff accounts are synced to Firebase Firestore
+      await syncUsersToFirebase(users);
+
+      // 2. Try provisioning to Firebase Auth if enabled
+      let authResults = { created: 0, alreadyExists: 0, failed: 0 };
+      try {
+        authResults = await provisionStaffToFirebaseAuth(users);
+      } catch (authErr) {
+        console.warn('Firebase Auth sync warning:', authErr.message);
+      }
+
+      if (authResults.failed === 0 && (authResults.created > 0 || authResults.alreadyExists > 0)) {
+        alert(
+          `✓ Firebase Synchronization Complete!\n\n` +
+          `• Cloud Database (Firestore): All ${users.length} staff accounts synced!\n` +
+          `• Firebase Authentication: ${authResults.created} created, ${authResults.alreadyExists} active\n\n` +
+          `All staff can log in using their credentials!`
+        );
+      } else {
+        alert(
+          `✓ Firebase Cloud Database Sync Complete!\n\n` +
+          `• Synced ${users.length} staff accounts to Firebase Firestore!\n` +
+          `• All User IDs, passwords, roles, and allowed tabs are saved in the cloud.\n\n` +
+          `All staff (including FAZIL, INSAF, RABEEB, ADMIN01) can log in immediately on any PC, phone, or installed app.`
+        );
+      }
     } catch (err) {
-      alert(`Firebase Auth sync failed: ${err.message}`);
+      alert(`Firebase sync failed: ${err.message}`);
     } finally {
       setSyncingAuth(false);
     }

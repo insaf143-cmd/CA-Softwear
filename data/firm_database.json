@@ -2,14 +2,14 @@
   "users": [
     {
       "id": "ADMIN01",
-      "name": "Admin User",
+      "allocatedClientIds": [],
+      "designation": "Managing Partner / Admin",
       "email": "admin@cadesk.in",
+      "mobile": "+91 99999 00000",
       "password": "admin",
       "role": "SUPER_ADMIN",
+      "name": "Admin User",
       "status": "Active",
-      "designation": "Managing Partner / Admin",
-      "mobile": "+91 99999 00000",
-      "allocatedClientIds": [],
       "allowedTabs": [
         "dashboard",
         "tasks",
@@ -24,6 +24,67 @@
         "calendar",
         "users"
       ]
+    },
+    {
+      "designation": "Article Assistant",
+      "allocatedClientIds": [],
+      "mobile": "",
+      "allowedTabs": [
+        "dashboard",
+        "tasks",
+        "reports",
+        "evidence",
+        "inwardOutward",
+        "clients",
+        "gst",
+        "it",
+        "roc",
+        "billing",
+        "calendar"
+      ],
+      "email": "taxbaybackup@gmail.com",
+      "id": "FAZIL",
+      "role": "MANAGER",
+      "status": "Active",
+      "name": "FAZIL",
+      "password": "123"
+    },
+    {
+      "email": "insaf@cadesk.in",
+      "status": "Active",
+      "id": "INSAF",
+      "designation": "Article Assistant",
+      "mobile": "",
+      "password": "123",
+      "role": "NORMAL_USER",
+      "allocatedClientIds": [],
+      "name": "insaf",
+      "allowedTabs": [
+        "dashboard",
+        "tasks",
+        "evidence",
+        "clients",
+        "it"
+      ]
+    },
+    {
+      "designation": "Staff Member",
+      "role": "MANAGER",
+      "mobile": "",
+      "status": "Active",
+      "name": "RABEEB",
+      "allocatedClientIds": [],
+      "allowedTabs": [
+        "tasks",
+        "evidence",
+        "clients",
+        "roc",
+        "billing",
+        "calendar"
+      ],
+      "email": "rabeeb@cadesk.in",
+      "password": "123",
+      "id": "RABEEB"
     }
   ],
   "clients": [],
@@ -46,5 +107,5 @@
   "evidenceDocuments": [],
   "inwardOutwardRecords": [],
   "isFresh": true,
-  "updatedAt": 1793008824629
+  "updatedAt": 1793014500000
 }
