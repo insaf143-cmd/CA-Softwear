@@ -18,11 +18,61 @@ import {
   RefreshCw,
   Sparkles,
   Building2,
-  UploadCloud
+  UploadCloud,
+  Layers,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { clearAllDataAndStartFresh } from '../utils/storage';
 import { isFirebaseConfigured } from '../config/firebase';
 import { registerWithFirebaseAuth, provisionStaffToFirebaseAuth } from '../services/firebaseAuthService';
+
+export const AVAILABLE_MODULE_TABS = [
+  { id: 'dashboard', label: 'Dashboard', desc: 'Firm overview, statistics, and shortcuts' },
+  { id: 'tasks', label: 'Work Allocation & Tasks', desc: 'Job allocation, submissions, approvals' },
+  { id: 'reports', label: 'Practice Reports', desc: 'Category-wise, staff performance, certificates' },
+  { id: 'evidence', label: 'Evidence & Documents Vault', desc: 'Store bank statements, balance sheets, evidence' },
+  { id: 'inwardOutward', label: 'Inward / Outward Register', desc: 'Material custody, books, DSC token register' },
+  { id: 'clients', label: 'Client 360° Directory', desc: 'Client master, PAN, GSTIN, directors, portal passwords' },
+  { id: 'gst', label: 'GST Compliance Module', desc: 'GSTR-1, 3B, 9 annual return tracking' },
+  { id: 'it', label: 'Income Tax (ITR) Module', desc: 'ITR-1 to 7 e-filing tracker & tax calculator' },
+  { id: 'roc', label: 'ROC & Statutory Audit', desc: 'MCA compliance, AOC-4, MGT-7, Form 3CD' },
+  { id: 'billing', label: 'Billing & Fee Ledger', desc: 'Raise bills, track payments, partial payments' },
+  { id: 'calendar', label: 'Compliance Calendar', desc: 'Statutory due dates calendar' },
+  { id: 'users', label: 'Staff & Role Control', desc: 'Manage user credentials and tab access permissions' }
+];
+
+export const getDefaultTabsForRole = (role) => {
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+    return AVAILABLE_MODULE_TABS.map((t) => t.id);
+  }
+  if (role === 'MANAGER') {
+    return [
+      'dashboard',
+      'tasks',
+      'reports',
+      'evidence',
+      'inwardOutward',
+      'clients',
+      'gst',
+      'it',
+      'roc',
+      'billing',
+      'calendar'
+    ];
+  }
+  // NORMAL_USER (Article Staff)
+  return [
+    'dashboard',
+    'tasks',
+    'evidence',
+    'inwardOutward',
+    'clients',
+    'gst',
+    'it',
+    'calendar'
+  ];
+};
 
 export default function UserManagement({
   users,
@@ -37,6 +87,10 @@ export default function UserManagement({
   const [showPass, setShowPass] = useState({});
   const [syncingAuth, setSyncingAuth] = useState(false);
 
+  // Tab Access Control State
+  const [editingUserTabs, setEditingUserTabs] = useState(null);
+  const [selectedTabsForEdit, setSelectedTabsForEdit] = useState([]);
+
   const [newUser, setNewUser] = useState({
     id: '',
     name: '',
@@ -45,7 +99,8 @@ export default function UserManagement({
     role: 'NORMAL_USER',
     designation: 'Article Assistant',
     mobile: '',
-    allocatedClientIds: []
+    allocatedClientIds: [],
+    allowedTabs: getDefaultTabsForRole('NORMAL_USER')
   });
 
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
@@ -133,6 +188,11 @@ export default function UserManagement({
       return;
     }
 
+    const finalAllowedTabs =
+      newUser.allowedTabs && newUser.allowedTabs.length > 0
+        ? newUser.allowedTabs
+        : getDefaultTabsForRole(newUser.role);
+
     const created = {
       ...newUser,
       id: cleanId,
@@ -140,7 +200,8 @@ export default function UserManagement({
       email: newUser.email.trim() || `${cleanId.toLowerCase()}@cadesk.in`,
       password: newUser.password.trim(),
       designation: newUser.designation.trim() || 'Staff Member',
-      status: 'Active'
+      status: 'Active',
+      allowedTabs: finalAllowedTabs
     };
 
     setUsers([...users, created]);
@@ -161,10 +222,35 @@ export default function UserManagement({
       role: 'NORMAL_USER',
       designation: 'Article Assistant',
       mobile: '',
-      allocatedClientIds: []
+      allocatedClientIds: [],
+      allowedTabs: getDefaultTabsForRole('NORMAL_USER')
     });
 
-    alert(`User "${created.name}" created successfully!\n\nUser ID: ${created.id}\nPassword: ${created.password}\nRole: ${created.role}${isFirebaseConfigured ? '\n\n✓ Account synced to Firebase Authentication!' : ''}`);
+    alert(`User "${created.name}" created successfully!\n\nUser ID: ${created.id}\nPassword: ${created.password}\nRole: ${created.role}\nAllowed Modules: ${finalAllowedTabs.length} tabs${isFirebaseConfigured ? '\n\n✓ Account synced to Firebase Authentication!' : ''}`);
+  };
+
+  const handleSaveUserTabs = (e) => {
+    e.preventDefault();
+    if (!editingUserTabs) return;
+
+    if (selectedTabsForEdit.length === 0) {
+      alert('Please select at least 1 module tab for this user!');
+      return;
+    }
+
+    const updated = users.map((u) => {
+      if (u.id === editingUserTabs.id) {
+        return {
+          ...u,
+          allowedTabs: selectedTabsForEdit
+        };
+      }
+      return u;
+    });
+
+    setUsers(updated);
+    alert(`Tab access permissions updated for "${editingUserTabs.name}"!\n\nAllowed Modules: ${selectedTabsForEdit.length} tabs.`);
+    setEditingUserTabs(null);
   };
 
   const handleSyncToFirebaseAuth = async () => {
@@ -324,6 +410,7 @@ export default function UserManagement({
                 <th className="p-3.5">Email & Mobile</th>
                 <th className="p-3.5">Role</th>
                 <th className="p-3.5">System Password</th>
+                <th className="p-3.5">Module Tab Access</th>
                 <th className="p-3.5">Allocated Clients</th>
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
@@ -395,6 +482,21 @@ export default function UserManagement({
                         </button>
                       )}
                     </div>
+                  </td>
+                  <td className="p-3.5">
+                    <button
+                      onClick={() => {
+                        setEditingUserTabs(u);
+                        setSelectedTabsForEdit(u.allowedTabs || getDefaultTabsForRole(u.role));
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-semibold transition"
+                      title="Click to add or remove module tabs access for this user"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-amber-400" />
+                      <span>
+                        {u.allowedTabs ? `${u.allowedTabs.length} Tabs Allowed` : `${getDefaultTabsForRole(u.role).length} Tabs (Role Default)`}
+                      </span>
+                    </button>
                   </td>
                   <td className="p-3.5">
                     <span className="text-xs font-mono font-bold text-slate-300">
@@ -575,6 +677,71 @@ export default function UserManagement({
                 </div>
               </div>
 
+              {/* Tab Access Permissions Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-slate-200 font-semibold text-xs">
+                    Allowed Module Tabs <span className="text-amber-400">*</span>
+                  </label>
+                  <div className="flex gap-1.5 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewUser({
+                          ...newUser,
+                          allowedTabs: AVAILABLE_MODULE_TABS.map((t) => t.id)
+                        })
+                      }
+                      className="text-amber-400 hover:underline"
+                    >
+                      Allow All
+                    </button>
+                    <span className="text-slate-600">&bull;</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewUser({
+                          ...newUser,
+                          allowedTabs: getDefaultTabsForRole(newUser.role)
+                        })
+                      }
+                      className="text-blue-400 hover:underline"
+                    >
+                      Role Default
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-900/80 rounded-xl border border-slate-700">
+                  {AVAILABLE_MODULE_TABS.map((tab) => {
+                    const isChecked = (newUser.allowedTabs || []).includes(tab.id);
+                    return (
+                      <label
+                        key={tab.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer text-[11px] transition ${
+                          isChecked
+                            ? 'bg-blue-950/60 border-amber-400/40 text-amber-300 font-semibold'
+                            : 'bg-slate-800/40 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            const cur = newUser.allowedTabs || [];
+                            const updated = isChecked
+                              ? cur.filter((id) => id !== tab.id)
+                              : [...cur, tab.id];
+                            setNewUser({ ...newUser, allowedTabs: updated });
+                          }}
+                          className="rounded accent-amber-400"
+                        />
+                        <span className="truncate">{tab.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Allocated Clients Selection (if any exist) */}
               {clients && clients.length > 0 && (
                 <div>
@@ -608,12 +775,123 @@ export default function UserManagement({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-950/50 transition"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold shadow-lg shadow-amber-500/20 transition"
                 >
                   Save User & Set Password
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Tab Access Permissions Modal */}
+      {editingUserTabs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-[#0e172f] border border-blue-800 rounded-3xl w-full max-w-xl p-6 md:p-8 space-y-4 shadow-2xl my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-blue-900/80">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Module Tab Access & Permissions</h3>
+                  <p className="text-xs text-blue-200/70">
+                    User: <strong className="text-white">{editingUserTabs.name}</strong> (ID: <span className="font-mono text-amber-400">{editingUserTabs.id}</span> &bull; {editingUserTabs.role})
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setEditingUserTabs(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Select which navigation tabs this user is permitted to see and access. Unchecked tabs will be blocked and hidden from their navigation sidebar.
+            </p>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <button
+                type="button"
+                onClick={() => setSelectedTabsForEdit(AVAILABLE_MODULE_TABS.map((t) => t.id))}
+                className="px-2.5 py-1 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 font-semibold"
+              >
+                + Allow All Tabs
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedTabsForEdit(getDefaultTabsForRole(editingUserTabs.role))}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
+              >
+                ↺ Reset to Role Defaults
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedTabsForEdit(['dashboard', 'tasks'])}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold"
+              >
+                Minimal (Tasks Only)
+              </button>
+            </div>
+
+            {/* Tab Checkboxes Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1 pr-2">
+              {AVAILABLE_MODULE_TABS.map((tab) => {
+                const isChecked = selectedTabsForEdit.includes(tab.id);
+                return (
+                  <label
+                    key={tab.id}
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition text-xs ${
+                      isChecked
+                        ? 'bg-blue-950/60 border-amber-400/50 text-white'
+                        : 'bg-[#0a1128]/80 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        if (isChecked) {
+                          setSelectedTabsForEdit(selectedTabsForEdit.filter((id) => id !== tab.id));
+                        } else {
+                          setSelectedTabsForEdit([...selectedTabsForEdit, tab.id]);
+                        }
+                      }}
+                      className="mt-0.5 rounded accent-amber-400"
+                    />
+                    <div>
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span className={isChecked ? 'text-amber-300' : 'text-slate-300'}>{tab.label}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{tab.desc}</div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-blue-900/80 flex items-center justify-between text-xs">
+              <span className="text-slate-400">
+                <strong className="text-amber-400">{selectedTabsForEdit.length}</strong> of {AVAILABLE_MODULE_TABS.length} Modules Allowed
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingUserTabs(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveUserTabs}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
+                >
+                  Save Tab Permissions
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

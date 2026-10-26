@@ -1,0 +1,17 @@
+{
+  "short_name": "TAXBAY",
+  "name": "TAXBAY - CA Practice & Tax Management Suite",
+  "description": "Professional Chartered Accountant Practice Suite, Tax Management, GST, ITR, Material Custody, and Billing.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b132b",
+  "theme_color": "#facc15",
+  "display": "standalone",
+  "orientation": "any"
+}

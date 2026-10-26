@@ -97,6 +97,8 @@ export const getUsers = () => {
 export const saveUsers = (data) => setItem(KEYS.USERS, data);
 
 export const getCurrentUser = () => {
+  // If not logged in this session, return null so login window shows
+  if (!getIsLoggedIn()) return null;
   const saved = localStorage.getItem(KEYS.CURRENT_USER);
   if (!saved) return null;
   try {
@@ -114,10 +116,28 @@ export const saveCurrentUser = (user) => {
 };
 
 export const getIsLoggedIn = () => {
+  // Opening the link in a browser tab/session ALWAYS prompts for login credentials
+  try {
+    const isSessionActive = sessionStorage.getItem('taxbay_session_active');
+    if (!isSessionActive) {
+      return false;
+    }
+  } catch {
+    // fallback if sessionStorage unavailable
+  }
   const saved = localStorage.getItem('digica_logged_in');
-  return saved !== null ? JSON.parse(saved) : false; // Default to false so login screen shows first
+  return saved !== null ? JSON.parse(saved) : false;
 };
 export const saveIsLoggedIn = (val) => {
+  try {
+    if (val) {
+      sessionStorage.setItem('taxbay_session_active', 'true');
+    } else {
+      sessionStorage.removeItem('taxbay_session_active');
+    }
+  } catch {
+    // ignore
+  }
   localStorage.setItem('digica_logged_in', JSON.stringify(val));
 };
 

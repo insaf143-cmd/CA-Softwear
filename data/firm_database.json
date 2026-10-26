@@ -1,29 +1,70 @@
 {
   "users": [
     {
-      "designation": "Managing Partner / Admin",
+      "id": "ADMIN01",
+      "name": "Admin User",
       "email": "admin@cadesk.in",
       "password": "admin",
-      "id": "ADMIN01",
-      "allocatedClientIds": [],
       "role": "SUPER_ADMIN",
-      "name": "Admin User",
       "status": "Active",
-      "mobile": "+91 99999 00000"
+      "designation": "Managing Partner / Admin",
+      "mobile": "+91 99999 00000",
+      "allocatedClientIds": []
     },
     {
+      "id": "RABEEB",
+      "name": "RABEEB",
+      "email": "rabeeb@cadesk.in",
+      "password": "123",
+      "role": "MANAGER",
+      "designation": "Staff Member",
       "mobile": "",
       "allocatedClientIds": [],
-      "designation": "Staff Member",
-      "role": "MANAGER",
-      "status": "Active",
-      "id": "RABEEB",
-      "email": "rabeeb@cadesk.in",
-      "name": "RABEEB",
-      "password": "123"
+      "status": "Active"
+    },
+    {
+      "id": "INSAF",
+      "name": "insaf",
+      "email": "insaf@cadesk.in",
+      "password": "123",
+      "role": "NORMAL_USER",
+      "designation": "Article Assistant",
+      "mobile": "",
+      "allocatedClientIds": [],
+      "status": "Active"
     }
   ],
   "clients": [
+    {
+      "id": "CL-1722",
+      "name": "SS",
+      "tradeName": "SS",
+      "constitution": "Private Limited Company",
+      "pan": "SSSSS",
+      "gstin": "N/A",
+      "tan": "N/A",
+      "cin": "Pending Registration",
+      "email": "",
+      "phone": "",
+      "authorizedPerson": "SS",
+      "address": "",
+      "assignedStaff": "ADMIN01",
+      "category": "Corporate",
+      "turnover": "₹1.0 Cr",
+      "bankDetails": {
+        "ifsc": "HDFC0000240",
+        "branch": "Main Branch",
+        "acNo": "001299881122",
+        "bank": "HDFC Bank"
+      },
+      "portalCredentials": {
+        "itPass": "ItPass#2026",
+        "itUser": "SSSSS",
+        "gstPass": "GstPass#2026",
+        "gstUser": "SSSSS_GST"
+      },
+      "directors": []
+    },
     {
       "assignedStaff": "ADMIN01",
       "cin": "Pending Registration",
@@ -35,9 +76,9 @@
       "authorizedPerson": "ASHRAF",
       "bankDetails": {
         "ifsc": "HDFC0000240",
-        "branch": "Main Branch",
+        "acNo": "001299881122",
         "bank": "HDFC Bank",
-        "acNo": "001299881122"
+        "branch": "Main Branch"
       },
       "address": "",
       "gstin": "33ACXFS0044F1Z4",
@@ -47,10 +88,10 @@
       "name": "STEELWUD",
       "tradeName": "STEELWUD",
       "portalCredentials": {
-        "itPass": "ItPass#2026",
         "gstPass": "GstPass#2026",
         "gstUser": "ACXFS0044F_GST",
-        "itUser": "ACXFS0044F"
+        "itUser": "ACXFS0044F",
+        "itPass": "ItPass#2026"
       },
       "constitution": "Limited Liability Partnership (LLP)"
     }
@@ -79,9 +120,9 @@
       "clientPan": "ACXFS0044F",
       "finishingDate": "2026-10-17",
       "approvalDetails": {
+        "approvedBy": "RABEEB (MANAGER)",
         "approvedAt": "2026-10-10",
-        "approvalRemarks": "Reviewed work papers and reconciliations. Found in order and approved for partner sign-off.",
-        "approvedBy": "RABEEB (MANAGER)"
+        "approvalRemarks": "Reviewed work papers and reconciliations. Found in order and approved for partner sign-off."
       },
       "estimatedHours": "6 hrs",
       "id": "CA-WRK-7513",
@@ -90,17 +131,141 @@
       "priority": "High",
       "status": "Completed",
       "dueDate": "2026-10-17"
+    },
+    {
+      "priority": "High",
+      "category": "GST",
+      "id": "CA-WRK-5031",
+      "assignedToName": "Admin User",
+      "status": "Transferred",
+      "allocatedDate": "2026-10-26",
+      "initialRemarks": "Allocated per annual engagement mandate.",
+      "dueDate": "2026-10-31",
+      "clientPan": "ACXFS0044F",
+      "clientName": "STEELWUD",
+      "feeQuote": "₹10,000",
+      "clientId": "CL177",
+      "department": "Statutory & Tax Audit",
+      "finishingDate": "2026-10-31",
+      "assignedTo": "ADMIN01",
+      "allocatedBy": "Admin User (SUPER_ADMIN)",
+      "fy": "2025-26",
+      "clientGstin": "33ACXFS0044F1Z4",
+      "statutorySection": "Section 39 / Rule 61 (GSTR-3B)",
+      "ay": "2026-27",
+      "title": "sss",
+      "estimatedHours": "6 hrs",
+      "transferHistory": [
+        {
+          "fromDepartment": "GST Compliance",
+          "fromUser": "RABEEB",
+          "toDepartment": "Statutory & Tax Audit",
+          "reason": "ss",
+          "toUser": "Admin User",
+          "managerName": "Admin User",
+          "transferDate": "2026-10-26"
+        },
+        {
+          "transferDate": "2026-10-26",
+          "fromUser": "Admin User",
+          "toUser": "RABEEB",
+          "reason": "ss",
+          "fromDepartment": "Statutory & Tax Audit",
+          "toDepartment": "Statutory & Tax Audit",
+          "managerName": "Admin User"
+        },
+        {
+          "toUser": "Admin User",
+          "reason": "SS",
+          "fromUser": "RABEEB",
+          "transferDate": "2026-10-26",
+          "toDepartment": "Statutory & Tax Audit",
+          "fromDepartment": "Statutory & Tax Audit",
+          "managerName": "RABEEB"
+        }
+      ],
+      "serviceLine": "Indirect Taxation (GST)",
+      "workDetails": "Standard compliance and verification required.",
+      "jobNumber": "JOB-2026-434"
+    },
+    {
+      "feeQuote": "₹10,000",
+      "jobNumber": "JOB-2026-218",
+      "workDetails": "Standard compliance and verification required.",
+      "estimatedHours": "6 hrs",
+      "assignedTo": "INSAF",
+      "id": "CA-WRK-9109",
+      "clientName": "SS",
+      "serviceLine": "Indirect Taxation (GST)",
+      "transferHistory": [
+        {
+          "fromUser": "RABEEB",
+          "fromDepartment": "GST Compliance",
+          "managerName": "Admin User",
+          "toDepartment": "Statutory & Tax Audit",
+          "reason": "aa",
+          "toUser": "insaf",
+          "transferDate": "2026-10-26"
+        }
+      ],
+      "clientId": "CL-1722",
+      "clientPan": "SSSSS",
+      "assignedToName": "insaf",
+      "initialRemarks": "Allocated per annual engagement mandate.",
+      "category": "GST",
+      "statutorySection": "Section 39 / Rule 61 (GSTR-3B)",
+      "dueDate": "2026-10-31",
+      "department": "Statutory & Tax Audit",
+      "fy": "2025-26",
+      "priority": "High",
+      "clientGstin": "N/A",
+      "ay": "2026-27",
+      "allocatedBy": "RABEEB (MANAGER)",
+      "finishingDate": "2026-10-31",
+      "status": "Completed",
+      "title": "SSS",
+      "allocatedDate": "2026-10-26",
+      "submissionDetails": {
+        "submittedAt": "2026-10-26",
+        "submittedBy": "insaf",
+        "submittedById": "INSAF",
+        "cloudDriveLink": "",
+        "completionRemarks": "AAA",
+        "evidenceFiles": [],
+        "workingPaperNotes": ""
+      },
+      "approvalDetails": {
+        "approvedBy": "Admin User (SUPER_ADMIN)",
+        "approvalRemarks": "Reviewed work papers and reconciliations. Found in order and approved for partner sign-off.",
+        "approvedAt": "2026-10-26"
+      }
     }
   ],
-  "invoices": [],
+  "invoices": [
+    {
+      "id": "INV-2026-811",
+      "clientId": "CL-1722",
+      "clientName": "SS",
+      "date": "2026-10-26",
+      "dueDate": "2026-11-10",
+      "services": "Professional Fees for GST Returns & Tax Audit Services",
+      "amount": 25000,
+      "cgst": 2250,
+      "sgst": 2250,
+      "igst": 0,
+      "totalAmount": 29500,
+      "status": "Pending",
+      "paymentMode": "-"
+    }
+  ],
   "firmProfile": {
-    "partnerName": "SHAMSUDHEEN",
-    "gstin": "",
-    "tagline": "COST ACCOUNTS",
-    "frn": "",
-    "email": "contact@sharma-ca.com",
     "phone": "+91 98765 43210",
+    "gstin": "",
+    "partnerName": "SHAMSUDHEEN",
+    "frn": "",
     "firmName": "M/s. SK ASSOCIATES",
+    "tagline": "COST ACCOUNTS",
+    "email": "contact@sharma-ca.com",
     "address": ""
   },
   "evidenceDocuments": [
@@ -122,8 +287,72 @@
       "uploadedById": "ADMIN01"
     }
   ],
-  "updatedAt": 1792996840930,
+  "updatedAt": 1793000114772,
   "inwardOutwardRecords": [
+    {
+      "id": "INW-2026-001",
+      "type": "Inward",
+      "date": "2026-08-01",
+      "time": "11:30 AM",
+      "clientId": "CL001",
+      "clientName": "Apex Infotech Private Limited",
+      "category": "Books & Registers",
+      "description": "Physical General Ledger, Cash Book, and Purchase Invoices Box (FY 2025-26)",
+      "quantity": "2 Box Files & 1 Pen Drive",
+      "handedBy": "Mr. Deepak Verma (Accounts Manager, Apex)",
+      "handedByPhone": "+91 98220 33445",
+      "receivedBy": "Rohan Gupta (Article Assistant)",
+      "rackLocation": "Rack A-2 / Shelf 3",
+      "status": "In Custody",
+      "remarks": "Original tax invoices with bank statements for Q1 & Q2",
+      "outwardDetails": null
+    },
+    {
+      "id": "INW-2026-002",
+      "type": "Inward",
+      "date": "2026-08-03",
+      "time": "03:15 PM",
+      "clientId": "CL002",
+      "clientName": "Mahavir Textiles & Traders",
+      "category": "DSC Token",
+      "description": "Class 3 Digital Signature Certificate (ePass2003) of Proprietor Shri Mahavir Jain",
+      "quantity": "1 USB Token with PIN envelope",
+      "handedBy": "Shri Mahavir Jain",
+      "handedByPhone": "+91 98210 55667",
+      "receivedBy": "Priya Nair (GST Specialist)",
+      "rackLocation": "Vault Locker 1 / Safe",
+      "status": "Returned",
+      "remarks": "Needed for GST Portal login and revocation verification",
+      "outwardDetails": {
+        "dispatchedBy": "Priya Nair",
+        "clientPhone": "+91 98210 55667",
+        "receivedByClient": "Shri Mahavir Jain (In Person)",
+        "date": "2026-08-06",
+        "time": "04:45 PM",
+        "acknowledgmentRemarks": "DSC token tested and returned safely in sealed envelope",
+        "mode": "Hand Delivery",
+        "outwardId": "OUT-2026-001",
+        "courierDetails": "-"
+      }
+    },
+    {
+      "id": "INW-2026-003",
+      "type": "Inward",
+      "date": "2026-08-05",
+      "time": "12:00 PM",
+      "clientId": "CL004",
+      "clientName": "Skyline Builders & Developers LLP",
+      "category": "Property & Title Deeds",
+      "description": "Original Project Joint Venture Agreement & RERA sanction copies",
+      "quantity": "1 Sealed Envelope (52 Pages)",
+      "handedBy": "Courier (Blue Dart Waybill #88291039)",
+      "handedByPhone": "022-26543210",
+      "receivedBy": "CA Ananya Verma",
+      "rackLocation": "Partner Chamber Cabinet C",
+      "status": "In Custody",
+      "remarks": "For MCA Form 8 charge creation and title verification",
+      "outwardDetails": null
+    },
     {
       "id": "INW-2026-004",
       "date": "2026-10-26",
@@ -141,70 +370,6 @@
       "remarks": "",
       "type": "Inward",
       "outwardDetails": null
-    },
-    {
-      "description": "Physical General Ledger, Cash Book, and Purchase Invoices Box (FY 2025-26)",
-      "handedByPhone": "+91 98220 33445",
-      "status": "In Custody",
-      "handedBy": "Mr. Deepak Verma (Accounts Manager, Apex)",
-      "type": "Inward",
-      "quantity": "2 Box Files & 1 Pen Drive",
-      "receivedBy": "Rohan Gupta (Article Assistant)",
-      "clientName": "Apex Infotech Private Limited",
-      "date": "2026-08-01",
-      "outwardDetails": null,
-      "id": "INW-2026-001",
-      "time": "11:30 AM",
-      "clientId": "CL001",
-      "rackLocation": "Rack A-2 / Shelf 3",
-      "remarks": "Original tax invoices with bank statements for Q1 & Q2",
-      "category": "Books & Registers"
-    },
-    {
-      "date": "2026-08-03",
-      "time": "03:15 PM",
-      "clientId": "CL002",
-      "description": "Class 3 Digital Signature Certificate (ePass2003) of Proprietor Shri Mahavir Jain",
-      "status": "Returned",
-      "outwardDetails": {
-        "time": "04:45 PM",
-        "acknowledgmentRemarks": "DSC token tested and returned safely in sealed envelope",
-        "date": "2026-08-06",
-        "courierDetails": "-",
-        "outwardId": "OUT-2026-001",
-        "receivedByClient": "Shri Mahavir Jain (In Person)",
-        "dispatchedBy": "Priya Nair",
-        "mode": "Hand Delivery",
-        "clientPhone": "+91 98210 55667"
-      },
-      "category": "DSC Token",
-      "rackLocation": "Vault Locker 1 / Safe",
-      "handedByPhone": "+91 98210 55667",
-      "id": "INW-2026-002",
-      "clientName": "Mahavir Textiles & Traders",
-      "remarks": "Needed for GST Portal login and revocation verification",
-      "receivedBy": "Priya Nair (GST Specialist)",
-      "handedBy": "Shri Mahavir Jain",
-      "type": "Inward",
-      "quantity": "1 USB Token with PIN envelope"
-    },
-    {
-      "type": "Inward",
-      "quantity": "1 Sealed Envelope (52 Pages)",
-      "handedBy": "Courier (Blue Dart Waybill #88291039)",
-      "status": "In Custody",
-      "remarks": "For MCA Form 8 charge creation and title verification",
-      "id": "INW-2026-003",
-      "category": "Property & Title Deeds",
-      "description": "Original Project Joint Venture Agreement & RERA sanction copies",
-      "clientId": "CL004",
-      "handedByPhone": "022-26543210",
-      "date": "2026-08-05",
-      "outwardDetails": null,
-      "clientName": "Skyline Builders & Developers LLP",
-      "time": "12:00 PM",
-      "receivedBy": "CA Ananya Verma",
-      "rackLocation": "Partner Chamber Cabinet C"
     }
   ]
 }

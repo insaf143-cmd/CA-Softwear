@@ -67,9 +67,55 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Day / Night Mode State
+  const [isDayMode, setIsDayMode] = useState(() => {
+    try {
+      return localStorage.getItem('taxbay_day_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleDayMode = () => {
+    setIsDayMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('taxbay_day_mode', String(next));
+      } catch (e) {
+        console.warn(e);
+      }
+      return next;
+    });
+  };
+
+  // PWA Deferred Prompt Listener for PC Installation
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+  useEffect(() => {
+    const handlePrompt = (e) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handlePrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handlePrompt);
+  }, []);
+
   // Storage & RBAC States
   const [users, setUsersState] = useState(getUsers);
   const [currentUser, setCurrentUserState] = useState(getCurrentUser);
+
+  // Tab Access Guard: Enforce allowedTabs permissions per user
+  useEffect(() => {
+    if (
+      currentUser &&
+      currentUser.allowedTabs &&
+      Array.isArray(currentUser.allowedTabs) &&
+      currentUser.allowedTabs.length > 0
+    ) {
+      if (!currentUser.allowedTabs.includes(activeTab)) {
+        setActiveTab(currentUser.allowedTabs[0]);
+      }
+    }
+  }, [currentUser, activeTab]);
 
   const [clients, setClientsState] = useState(getClients);
   const [removedClients, setRemovedClientsState] = useState(getRemovedClients);
@@ -532,11 +578,44 @@ export default function App() {
 
   // If user is not logged in, show dedicated Login Screen
   if (!isLoggedIn || !currentUser) {
-    return <LoginScreen users={users} onLogin={handleLogin} firmProfile={firmProfile} />;
+    return (
+      <LoginScreen
+        users={users}
+        onLogin={handleLogin}
+        firmProfile={firmProfile}
+        isDayMode={isDayMode}
+      />
+    );
   }
 
+  // Filter mobile navigation tabs by user role and allowedTabs
+  const allMobileTabs = [
+    { id: 'tasks', label: 'Work', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'dashboard', label: 'Dashboard', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'reports', label: 'Reports', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+    { id: 'evidence', label: 'Vault', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'inwardOutward', label: 'Register', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'clients', label: 'Clients', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'gst', label: 'GST', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'it', label: 'ITR', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'roc', label: 'ROC', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+    { id: 'billing', label: 'Billing', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+    { id: 'calendar', label: 'Calendar', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
+    { id: 'users', label: 'Staff', roles: ['SUPER_ADMIN', 'ADMIN'] }
+  ].filter((t) => {
+    if (!t.roles.includes(currentUser.role)) return false;
+    if (currentUser.allowedTabs && Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0) {
+      return currentUser.allowedTabs.includes(t.id);
+    }
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+    <div
+      className={`${
+        isDayMode ? 'day-mode bg-slate-100 text-slate-800' : 'bg-slate-950 text-slate-100'
+      } min-h-screen flex flex-col font-sans transition-colors duration-200 selection:bg-amber-500 selection:text-white`}
+    >
       {/* Top Header */}
       <Header
         searchTerm={searchTerm}
@@ -554,6 +633,9 @@ export default function App() {
         onLogout={handleLogout}
         activeTab={activeTab}
         pendingReviewCount={pendingReviewCount}
+        isDayMode={isDayMode}
+        toggleDayMode={toggleDayMode}
+        deferredInstallPrompt={deferredInstallPrompt}
       />
 
       {/* Main Workspace Layout */}
@@ -564,19 +646,30 @@ export default function App() {
           setActiveTab={setActiveTab}
           counts={counts}
           currentUser={currentUser}
+          isDayMode={isDayMode}
         />
 
         {/* Mobile Navigation Pills */}
-        <div className="md:hidden flex overflow-x-auto bg-slate-900 border-b border-slate-800 p-2 gap-2 fixed bottom-0 left-0 right-0 z-40">
-          {['tasks', 'dashboard', 'reports', 'evidence', 'inwardOutward', 'clients', 'gst', 'it', 'calendar', 'users'].map((tab) => (
+        <div
+          className={`md:hidden flex overflow-x-auto border-t p-2 gap-2 fixed bottom-0 left-0 right-0 z-40 ${
+            isDayMode ? 'bg-white border-slate-200 shadow-lg' : 'bg-slate-900 border-slate-800'
+          }`}
+        >
+          {allMobileTabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap uppercase ${
-                activeTab === tab ? 'bg-cyan-600 text-white font-extrabold shadow' : 'bg-slate-800 text-slate-400'
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap uppercase transition-all ${
+                activeTab === tab.id
+                  ? isDayMode
+                    ? 'bg-blue-700 text-white font-extrabold shadow border border-amber-400'
+                    : 'bg-blue-900 text-amber-300 font-extrabold shadow border border-amber-400/50'
+                  : isDayMode
+                  ? 'bg-slate-100 text-slate-600'
+                  : 'bg-slate-800 text-slate-400'
               }`}
             >
-              {tab === 'tasks' ? 'Work' : tab === 'evidence' ? 'Vault' : tab === 'inwardOutward' ? 'Register' : tab}
+              {tab.label}
             </button>
           ))}
         </div>

@@ -141,3 +141,95 @@
 .ca-table tr:hover td {
   background-color: rgba(51, 65, 85, 0.4);
 }
+
+/* ======================================================== */
+/* TAXBAY Yellow & Blue Theme & Day Mode Overrides           */
+/* ======================================================== */
+.day-mode {
+  --bg-primary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --accent-blue: #1e40af;
+  --accent-yellow: #d97706;
+  --accent-gold: #f59e0b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+}
+
+.day-mode .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+.day-mode .bg-slate-900 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.day-mode .bg-slate-900\/95,
+.day-mode .bg-slate-900\/90,
+.day-mode .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.day-mode .bg-slate-800 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.day-mode .bg-slate-800\/90,
+.day-mode .bg-slate-800\/80,
+.day-mode .bg-slate-800\/70,
+.day-mode .bg-slate-800\/60,
+.day-mode .bg-slate-800\/50,
+.day-mode .bg-slate-800\/40 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.day-mode .border-slate-800,
+.day-mode .border-slate-700,
+.day-mode .border-slate-700\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+.day-mode .text-slate-100,
+.day-mode .text-slate-200 {
+  color: #0f172a !important;
+}
+
+.day-mode .text-slate-300 {
+  color: #1e293b !important;
+}
+
+.day-mode .text-slate-400 {
+  color: #475569 !important;
+}
+
+.day-mode .ca-table-container {
+  border-color: #e2e8f0 !important;
+}
+
+.day-mode .ca-table th {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.day-mode .ca-table td {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.day-mode .ca-table tr:hover td {
+  background-color: #f8fafc !important;
+}
+
+.day-mode .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
