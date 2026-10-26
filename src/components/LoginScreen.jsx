@@ -56,7 +56,8 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
       (u) =>
         u.id?.toUpperCase() === identifierUpper ||
         u.email?.toLowerCase() === identifierLower ||
-        u.name?.toLowerCase() === identifierLower
+        u.name?.toLowerCase() === identifierLower ||
+        (u.backupEmail && u.backupEmail.toLowerCase() === identifierLower)
     );
 
     // If not found in local memory yet (e.g. initial load on installed device), query Firebase Firestore directly!
@@ -73,7 +74,8 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
               (u) =>
                 u.id?.toUpperCase() === identifierUpper ||
                 u.email?.toLowerCase() === identifierLower ||
-                u.name?.toLowerCase() === identifierLower
+                u.name?.toLowerCase() === identifierLower ||
+                (u.backupEmail && u.backupEmail.toLowerCase() === identifierLower)
             );
           if (found) targetUser = found;
         }
@@ -267,6 +269,26 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
               <span>{loading ? 'Authenticating with TAXBAY...' : 'Authorize & Sign In'}</span>
               <ArrowRight className="w-4 h-4 text-slate-950" />
             </button>
+
+            {/* Clear Local Device Cache helper button */}
+            <div className="pt-1 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('⚠️ CLEAR LOCAL DEVICE CACHE?\n\nThis will purge all local browser cache on this device and reload 100% fresh data from Firebase Cloud.\n\nProceed?')) {
+                    try {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                    } catch (_) {}
+                    window.location.reload();
+                  }
+                }}
+                className="text-[11px] text-slate-400 hover:text-amber-400 transition underline inline-flex items-center gap-1"
+                title="Wipe local browser cache and reload fresh from Firebase Cloud"
+              >
+                <span>↺ Clear Local Device Cache & Fresh Sync</span>
+              </button>
+            </div>
           </form>
 
           {/* PC Desktop Installation & App Link Banner */}

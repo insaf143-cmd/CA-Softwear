@@ -26,9 +26,9 @@
       ]
     },
     {
-      "designation": "Article Assistant",
+      "designation": "Audit & Tax Manager",
       "allocatedClientIds": [],
-      "mobile": "",
+      "mobile": "+91 99999 00000",
       "allowedTabs": [
         "dashboard",
         "tasks",
@@ -42,7 +42,8 @@
         "billing",
         "calendar"
       ],
-      "email": "taxbaybackup@gmail.com",
+      "email": "fazil@cadesk.in",
+      "backupEmail": "taxbaybackup@gmail.com",
       "id": "FAZIL",
       "role": "MANAGER",
       "status": "Active",
@@ -107,5 +108,5 @@
   "evidenceDocuments": [],
   "inwardOutwardRecords": [],
   "isFresh": true,
-  "updatedAt": 1793014500000
+  "updatedAt": 1793014800000
 }
