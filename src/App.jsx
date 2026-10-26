@@ -93,6 +93,13 @@ export default function App() {
   const [inwardOutwardRecords, setInwardOutwardRecordsState] = useState(getInwardOutwardRecords);
 
   const lastSyncedAtRef = useRef(0);
+  const mainContentRef = useRef(null);
+
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   // Broadcast change to central database file on host
   const syncToCentralServer = (changes = {}) => {
@@ -432,7 +439,7 @@ export default function App() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full pb-20 md:pb-6">
+        <main ref={mainContentRef} className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full pb-20 md:pb-6">
           {activeTab === 'dashboard' && (
             <Dashboard
               clients={visibleClients}

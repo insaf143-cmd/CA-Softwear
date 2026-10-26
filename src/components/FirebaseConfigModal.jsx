@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Database, X, CheckCircle, ShieldCheck, ExternalLink, Key, UploadCloud, RefreshCw, AlertCircle, Copy, Check } from 'lucide-react';
+import { Database, X, CheckCircle, ShieldCheck, ExternalLink, Key, UploadCloud, RefreshCw, AlertCircle, Copy, Check, Users } from 'lucide-react';
 import { firebaseConfig, isFirebaseConfigured } from '../config/firebase';
+import { provisionStaffToFirebaseAuth } from '../services/firebaseAuthService';
 
 export default function FirebaseConfigModal({ onClose, currentData, onUploadAll }) {
   const [config, setConfig] = useState({
@@ -82,6 +83,7 @@ export default function FirebaseConfigModal({ onClose, currentData, onUploadAll 
   };
 
   const [uploadError, setUploadError] = useState(false);
+  const [syncingStaff, setSyncingStaff] = useState(false);
 
   const handleBulkUpload = async () => {
     if (!onUploadAll || !currentData) return;
@@ -97,6 +99,23 @@ export default function FirebaseConfigModal({ onClose, currentData, onUploadAll 
       setUploadMsg(err.message);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSyncStaffAuth = async () => {
+    if (!currentData?.users) return;
+    setSyncingStaff(true);
+    setUploadError(false);
+    setUploadMsg('Registering staff members into Firebase Authentication...');
+    try {
+      const res = await provisionStaffToFirebaseAuth(currentData.users);
+      setUploadError(false);
+      setUploadMsg(`Firebase Auth Sync Complete! Created: ${res.created}, Already registered: ${res.alreadyExists}, Failed: ${res.failed}.`);
+    } catch (err) {
+      setUploadError(true);
+      setUploadMsg(`Auth Sync Error: ${err.message}`);
+    } finally {
+      setSyncingStaff(false);
     }
   };
 
@@ -159,14 +178,25 @@ export default function FirebaseConfigModal({ onClose, currentData, onUploadAll 
                   Populate your Firebase Firestore collections with all currently stored clients, works, and invoices.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleBulkUpload}
-                disabled={uploading}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md disabled:opacity-50 transition shrink-0"
-              >
-                {uploading ? 'Uploading...' : 'Upload Data to Firebase'}
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleSyncStaffAuth}
+                  disabled={syncingStaff}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md disabled:opacity-50 transition shrink-0"
+                  title="Register all staff accounts in Firebase Authentication"
+                >
+                  {syncingStaff ? 'Syncing...' : '⚡ Sync Staff to Firebase Auth'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkUpload}
+                  disabled={uploading}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md disabled:opacity-50 transition shrink-0"
+                >
+                  {uploading ? 'Uploading...' : 'Upload Data to Firebase'}
+                </button>
+              </div>
             </div>
             {uploadMsg && (
               <div className={`text-xs p-3 rounded-xl border mt-2 leading-relaxed ${

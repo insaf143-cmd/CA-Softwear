@@ -279,6 +279,43 @@ export default function UserManagement({
 
       {/* Users Table */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        {/* Table Action Header */}
+        <div className="p-4 bg-slate-850 bg-slate-800/80 border-b border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Users className="w-4 h-4 text-cyan-400" />
+              <span>Firm Staff & User Accounts ({users.length})</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Manage User IDs, passwords, roles, and Firebase Cloud Authentication access.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Direct Sync to Firebase Auth Button */}
+            <button
+              type="button"
+              onClick={handleSyncToFirebaseAuth}
+              disabled={syncingAuth}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-950/40 transition"
+              title="Register and sync all staff to Firebase Authentication"
+            >
+              <UploadCloud className="w-4 h-4 text-slate-950" />
+              <span>{syncingAuth ? 'Syncing...' : '⚡ Sync Staff to Firebase Auth'}</span>
+            </button>
+
+            {/* Create User Button */}
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ Create User</span>
+            </button>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-800/80 text-[11px] uppercase font-bold text-slate-400 border-b border-slate-700">
