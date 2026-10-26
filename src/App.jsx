@@ -773,6 +773,8 @@ export default function App() {
               clients={visibleClients}
               tasks={tasks}
               currentUser={currentUser}
+              firmProfile={firmProfile}
+              onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
             />
           )}
 

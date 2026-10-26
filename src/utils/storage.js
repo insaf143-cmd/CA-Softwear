@@ -277,7 +277,8 @@ export const DEFAULT_FIRM_PROFILE = {
   address: 'Suite 401, Nariman Point, Mumbai - 400021',
   phone: '+91 98765 43210',
   email: 'contact@sharma-ca.com',
-  partnerName: 'CA Rajesh Sharma'
+  partnerName: 'CA Rajesh Sharma',
+  driveFolderUrl: ''
 };
 
 export const getFirmProfile = () => getItem('digica_firm_profile', DEFAULT_FIRM_PROFILE);

@@ -9,7 +9,8 @@ import {
   MapPin,
   FileText,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  ExternalLink
 } from 'lucide-react';
 import { DEFAULT_FIRM_PROFILE } from '../utils/storage';
 
@@ -22,7 +23,8 @@ export default function FirmSettingsModal({ firmProfile, onSaveFirmProfile, onCl
     address: firmProfile?.address || DEFAULT_FIRM_PROFILE.address,
     phone: firmProfile?.phone || DEFAULT_FIRM_PROFILE.phone,
     email: firmProfile?.email || DEFAULT_FIRM_PROFILE.email,
-    partnerName: firmProfile?.partnerName || DEFAULT_FIRM_PROFILE.partnerName
+    partnerName: firmProfile?.partnerName || DEFAULT_FIRM_PROFILE.partnerName,
+    driveFolderUrl: firmProfile?.driveFolderUrl || DEFAULT_FIRM_PROFILE.driveFolderUrl || ''
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -174,6 +176,26 @@ export default function FirmSettingsModal({ firmProfile, onSaveFirmProfile, onCl
                 className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
+          </div>
+
+          {/* Firm Google Drive / Cloud Audit Repository Folder */}
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              Firm Master Google Drive / Cloud Storage Folder URL
+            </label>
+            <div className="relative">
+              <ExternalLink className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400" />
+              <input
+                type="text"
+                value={formData.driveFolderUrl}
+                onChange={(e) => setFormData({ ...formData, driveFolderUrl: e.target.value })}
+                placeholder="e.g. https://drive.google.com/drive/folders/1A2B3C... or D:\CA_Audit_Vault"
+                className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono text-xs"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Root Google Drive folder or local network directory for firm-wide working papers, scans, and audit client files.
+            </p>
           </div>
 
           {/* Phone & Email */}
