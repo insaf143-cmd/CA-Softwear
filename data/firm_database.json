@@ -86,6 +86,31 @@
       "email": "rabeeb@cadesk.in",
       "password": "123",
       "id": "RABEEB"
+    },
+    {
+      "designation": "Article Assistant",
+      "role": "ADMIN",
+      "mobile": "",
+      "status": "Active",
+      "name": "Shamsu",
+      "allocatedClientIds": [],
+      "allowedTabs": [
+        "dashboard",
+        "tasks",
+        "reports",
+        "evidence",
+        "inwardOutward",
+        "clients",
+        "gst",
+        "it",
+        "roc",
+        "billing",
+        "calendar",
+        "users"
+      ],
+      "email": "shamsu@cadesk.in",
+      "password": "123",
+      "id": "SHAMSU"
     }
   ],
   "clients": [],
@@ -108,5 +133,5 @@
   "evidenceDocuments": [],
   "inwardOutwardRecords": [],
   "isFresh": true,
-  "updatedAt": 1793014800000
+  "updatedAt": 1793015600000
 }
