@@ -21,7 +21,7 @@ import {
   ExternalLink,
   Laptop
 } from 'lucide-react';
-import { getFirmProfile } from '../utils/storage';
+import { getFirmProfile, getDeletedUserIds } from '../utils/storage';
 import { isFirebaseConfigured } from '../config/firebase';
 import { signInWithFirebaseAuth } from '../services/firebaseAuthService';
 
@@ -32,7 +32,6 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showQuickProfiles, setShowQuickProfiles] = useState(false);
 
   const handleManualLogin = async (e) => {
     e.preventDefault();
@@ -40,18 +39,33 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
     setLoading(true);
 
     const identifier = email.trim();
+    const identifierUpper = identifier.toUpperCase();
     const identifierLower = identifier.toLowerCase();
 
-    // Check if matching staff exists in local database
+    // Check if user has been deleted by firm administrator
+    const deletedUserIds = getDeletedUserIds();
+    if (deletedUserIds.includes(identifierUpper)) {
+      setErrorMsg('This account has been removed by the administrator. Access denied.');
+      setLoading(false);
+      return;
+    }
+
+    // Check if matching staff exists in active firm users list
     const targetUser = users.find(
       (u) =>
-        u.id?.toLowerCase() === identifierLower ||
+        u.id?.toUpperCase() === identifierUpper ||
         u.email?.toLowerCase() === identifierLower ||
         u.name?.toLowerCase() === identifierLower
     );
 
-    if (targetUser && targetUser.status === 'Blocked') {
-      setErrorMsg('Your account has been deactivated. Contact your firm admin.');
+    if (!targetUser) {
+      setErrorMsg('User ID or Email not found in firm database. Please check credentials.');
+      setLoading(false);
+      return;
+    }
+
+    if (targetUser.status === 'Blocked') {
+      setErrorMsg('Your account has been deactivated by the firm admin. Access denied.');
       setLoading(false);
       return;
     }
@@ -60,22 +74,14 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
     if (isFirebaseConfigured) {
       const authEmail = identifier.includes('@')
         ? identifier
-        : (targetUser?.email || `${identifierLower}@cadesk.in`);
+        : (targetUser.email || `${identifierLower}@cadesk.in`);
 
       const fbResult = await signInWithFirebaseAuth(authEmail, password);
 
       if (fbResult.success) {
         // Authenticated successfully via Google Firebase!
-        const finalUser = targetUser || {
-          id: fbResult.user.uid.slice(0, 8).toUpperCase(),
-          name: fbResult.user.displayName || fbResult.user.email.split('@')[0],
-          email: fbResult.user.email,
-          role: 'ADMIN',
-          designation: 'Managing Partner / Admin',
-          status: 'Active'
-        };
         setLoading(false);
-        onLogin(finalUser);
+        onLogin(targetUser);
         return;
       }
 
@@ -86,8 +92,12 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
         return;
       }
 
-      // Fallback to local credentials so users are never locked out
-      if (targetUser && (targetUser.password === password || password === 'admin' || password === '123' || password === '123456')) {
+      // Fallback to local credentials for master admin or offline matching
+      const isValidLocal =
+        targetUser.password === password ||
+        (targetUser.id === 'ADMIN01' && password === 'admin');
+
+      if (isValidLocal) {
         setLoading(false);
         onLogin(targetUser);
         return;
@@ -99,17 +109,17 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
     }
 
     // --- 2. LOCAL OFFLINE AUTHENTICATION FALLBACK ---
-    if (targetUser && (targetUser.password === password || password === 'admin' || password === '123' || password === '123456')) {
+    const isValidOffline =
+      targetUser.password === password ||
+      (targetUser.id === 'ADMIN01' && password === 'admin');
+
+    if (isValidOffline) {
       setLoading(false);
       onLogin(targetUser);
     } else {
       setErrorMsg('Invalid User ID or Password. Please check credentials.');
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = (user) => {
-    onLogin(user);
   };
 
   return (
@@ -264,49 +274,6 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
               </button>
             )}
           </div>
-        </div>
-
-        {/* Collapsible Quick Profile Switcher */}
-        <div className="bg-[#0e172f]/70 border border-blue-900/50 rounded-2xl p-4 text-xs">
-          <button
-            type="button"
-            onClick={() => setShowQuickProfiles(!showQuickProfiles)}
-            className="w-full flex items-center justify-between text-blue-200 hover:text-white transition font-medium text-[11px]"
-          >
-            <span className="flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span>Available Staff Accounts ({users.length})</span>
-            </span>
-            {showQuickProfiles ? (
-              <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            )}
-          </button>
-
-          {showQuickProfiles && (
-            <div className="mt-3 pt-3 border-t border-blue-900/60 space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => handleQuickLogin(u)}
-                  className="w-full p-2.5 rounded-xl bg-[#0a1128]/80 hover:bg-[#0a1128] border border-blue-900/50 hover:border-amber-400/50 flex items-center justify-between text-left transition group text-xs"
-                >
-                  <div className="truncate">
-                    <span className="font-bold text-slate-200 block truncate group-hover:text-amber-300">
-                      {u.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      ID: <strong className="text-amber-400">{u.id}</strong> &bull; {u.role === 'SUPER_ADMIN' ? 'Super Admin' : u.role === 'MANAGER' ? 'Manager' : 'User'}
-                    </span>
-                  </div>
-                  <span className="text-[10px] px-2.5 py-1 rounded-lg bg-blue-600/30 text-blue-200 font-bold group-hover:bg-amber-400 group-hover:text-slate-950 transition shrink-0">
-                    Sign in
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -320,6 +320,16 @@ export const saveSingleUserToFirebase = async (user) => {
   }
 };
 
+export const deleteSingleUserFromFirebase = async (userId) => {
+  if (!isFirebaseConfigured || !db || !userId) return;
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.USERS, userId));
+    console.log(`[Firebase AutoSync] User deleted from cloud: ${userId}`);
+  } catch (err) {
+    console.warn(`[Firebase AutoSync] Error deleting user ${userId}:`, err.message);
+  }
+};
+
 export const syncUsersToFirebase = async (users) => {
   if (!isFirebaseConfigured || !db || !Array.isArray(users)) return;
   try {

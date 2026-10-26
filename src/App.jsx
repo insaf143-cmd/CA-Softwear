@@ -36,7 +36,9 @@ import {
   getFirmProfile, saveFirmProfile,
   getEvidenceDocuments, saveEvidenceDocuments,
   getInwardOutwardRecords, saveInwardOutwardRecords,
-  resetAllData
+  resetAllData,
+  getDeletedUserIds,
+  getDefaultTabsForRole
 } from './utils/storage';
 
 import {
@@ -103,19 +105,38 @@ export default function App() {
   const [users, setUsersState] = useState(getUsers);
   const [currentUser, setCurrentUserState] = useState(getCurrentUser);
 
-  // Tab Access Guard: Enforce allowedTabs permissions per user
+  // Tab Access Guard: Enforce strict allowedTabs permissions per user
   useEffect(() => {
-    if (
-      currentUser &&
-      currentUser.allowedTabs &&
-      Array.isArray(currentUser.allowedTabs) &&
-      currentUser.allowedTabs.length > 0
-    ) {
-      if (!currentUser.allowedTabs.includes(activeTab)) {
-        setActiveTab(currentUser.allowedTabs[0]);
+    if (currentUser) {
+      const userTabs =
+        Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
+          ? currentUser.allowedTabs
+          : getDefaultTabsForRole(currentUser.role);
+
+      if (!userTabs.includes(activeTab)) {
+        setActiveTab(userTabs[0] || 'tasks');
       }
     }
   }, [currentUser, activeTab]);
+
+  // Synchronize currentUser whenever users state is modified (e.g. Tab Access edited, user deleted)
+  useEffect(() => {
+    if (currentUser && Array.isArray(users)) {
+      const matching = users.find((u) => u.id === currentUser.id);
+      if (matching) {
+        const tabsDiff = JSON.stringify(matching.allowedTabs) !== JSON.stringify(currentUser.allowedTabs);
+        const roleDiff = matching.role !== currentUser.role;
+        const statusDiff = matching.status !== currentUser.status;
+        if (tabsDiff || roleDiff || statusDiff) {
+          setCurrentUserState(matching);
+          saveCurrentUser(matching);
+        }
+      } else {
+        // If logged-in account was removed by Admin, force immediate logout
+        handleLogout();
+      }
+    }
+  }, [users]);
 
   const [clients, setClientsState] = useState(getClients);
   const [removedClients, setRemovedClientsState] = useState(getRemovedClients);
@@ -210,6 +231,13 @@ export default function App() {
       saveUsers(next);
       syncUsersToFirebase(next);
       syncToCentralServer({ users: next });
+      if (currentUser) {
+        const matchingCurrent = next.find((u) => u.id === currentUser.id);
+        if (matchingCurrent) {
+          setCurrentUserState(matchingCurrent);
+          saveCurrentUser(matchingCurrent);
+        }
+      }
       return next;
     });
   };
@@ -301,9 +329,11 @@ export default function App() {
         const isFresh = localStorage.getItem('taxbay_fresh_initialized') === 'true';
 
         if (db.users && Array.isArray(db.users)) {
-          if (db.users.length > 0) {
+          const deleted = getDeletedUserIds();
+          const cleanUsers = db.users.filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
+          if (cleanUsers.length > 0) {
             setUsersState((prev) => {
-              const merged = mergeListsById(prev, db.users);
+              const merged = mergeListsById(prev, cleanUsers).filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
               saveUsers(merged);
               return merged;
             });
@@ -411,7 +441,11 @@ export default function App() {
         const res = await fetchCentralDatabase();
         if (res && res.success && res.data && isMounted) {
           const db = res.data;
-          if (db.users) setUsersState((prev) => mergeListsById(prev, db.users));
+          if (db.users && Array.isArray(db.users)) {
+            const deleted = getDeletedUserIds();
+            const cleanUsers = db.users.filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
+            setUsersState((prev) => mergeListsById(prev, cleanUsers).filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase())));
+          }
           if (db.clients) setClientsState((prev) => mergeListsById(prev, db.clients));
           if (db.tasks) setTasksState((prev) => mergeListsById(prev, db.tasks));
           if (db.inwardOutwardRecords) setInwardOutwardRecordsState((prev) => mergeListsById(prev, db.inwardOutwardRecords));
@@ -556,9 +590,11 @@ export default function App() {
     });
 
     const unsubUsers = subscribeToUsersFromFirebase((cloudUsers) => {
-      if (cloudUsers && cloudUsers.length > 0) {
+      if (cloudUsers && Array.isArray(cloudUsers)) {
+        const deleted = getDeletedUserIds();
+        const cleanUsers = cloudUsers.filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
         setUsersState((local) => {
-          const merged = mergeListsById(local, cloudUsers);
+          const merged = mergeListsById(local, cleanUsers).filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
           saveUsers(merged);
           return merged;
         });
@@ -715,10 +751,11 @@ export default function App() {
     { id: 'users', label: 'Staff', roles: ['SUPER_ADMIN', 'ADMIN'] }
   ].filter((t) => {
     if (!t.roles.includes(currentUser.role)) return false;
-    if (currentUser.allowedTabs && Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0) {
-      return currentUser.allowedTabs.includes(t.id);
-    }
-    return true;
+    const userTabs =
+      Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
+        ? currentUser.allowedTabs
+        : getDefaultTabsForRole(currentUser.role);
+    return userTabs.includes(t.id);
   });
 
   return (

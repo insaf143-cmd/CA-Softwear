@@ -16,6 +16,7 @@ import {
   FolderArchive,
   FolderInput
 } from 'lucide-react';
+import { getDefaultTabsForRole } from '../utils/storage';
 
 export default function Sidebar({ activeTab, setActiveTab, counts, currentUser, isDayMode = false }) {
   const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
@@ -133,18 +134,19 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser, 
   ];
 
   // Tab Access Control:
-  // Filter by role AND filter by custom allowedTabs if configured for this user
+  // Strict tab permissions: User can ONLY view tabs that are in their allowedTabs list
+  const userAllowedTabs =
+    Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
+      ? currentUser.allowedTabs
+      : getDefaultTabsForRole(currentUser.role);
+
   const visibleNavItems = navItems.filter((item) => {
+    // 1. Role must allow this tab
     const roleAllowed = item.roles.includes(currentUser.role);
     if (!roleAllowed) return false;
 
-    // Check custom tab permissions
-    if (currentUser.allowedTabs && Array.isArray(currentUser.allowedTabs)) {
-      if (currentUser.allowedTabs.length > 0) {
-        return currentUser.allowedTabs.includes(item.id);
-      }
-    }
-    return true;
+    // 2. Tab MUST be explicitly permitted in userAllowedTabs
+    return userAllowedTabs.includes(item.id);
   });
 
   return (

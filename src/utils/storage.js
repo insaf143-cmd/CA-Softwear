@@ -84,17 +84,56 @@ export const saveEvidenceDocuments = (data) => setItem(KEYS.EVIDENCE_DOCS, data)
 export const getInwardOutwardRecords = () => getItem(KEYS.INWARD_OUTWARD, INITIAL_INWARD_OUTWARD);
 export const saveInwardOutwardRecords = (data) => setItem(KEYS.INWARD_OUTWARD, data);
 
+export const getDefaultTabsForRole = (role) => {
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+    return [
+      'dashboard', 'tasks', 'reports', 'evidence', 'inwardOutward',
+      'clients', 'gst', 'it', 'roc', 'billing', 'calendar', 'users'
+    ];
+  }
+  if (role === 'MANAGER') {
+    return [
+      'dashboard', 'tasks', 'reports', 'evidence', 'inwardOutward',
+      'clients', 'gst', 'it', 'roc', 'billing', 'calendar'
+    ];
+  }
+  // NORMAL_USER (Staff)
+  return [
+    'dashboard', 'tasks', 'evidence', 'inwardOutward',
+    'clients', 'gst', 'it', 'calendar'
+  ];
+};
+
+export const getDeletedUserIds = () => {
+  try {
+    return JSON.parse(localStorage.getItem('taxbay_deleted_users') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+export const addDeletedUserId = (userId) => {
+  if (!userId) return;
+  const current = getDeletedUserIds();
+  const clean = userId.trim().toUpperCase();
+  if (!current.includes(clean)) {
+    localStorage.setItem('taxbay_deleted_users', JSON.stringify([...current, clean]));
+  }
+};
+
 export const getUsers = () => {
   const users = getItem(KEYS.USERS, INITIAL_USERS);
   if (!users || users.length === 0) return [INITIAL_USERS[0]];
-  // Ensure U2 has role MANAGER if loaded from old cache
-  const updatedUsers = users.map(u => {
-    if (u.id === 'U2' && u.role === 'ADMIN') {
-      return { ...u, role: 'MANAGER' };
-    }
-    return u;
-  });
-  return updatedUsers;
+  const deleted = getDeletedUserIds();
+
+  return users
+    .filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()))
+    .map((u) => ({
+      ...u,
+      allowedTabs: Array.isArray(u.allowedTabs) && u.allowedTabs.length > 0
+        ? u.allowedTabs
+        : getDefaultTabsForRole(u.role)
+    }));
 };
 export const saveUsers = (data) => setItem(KEYS.USERS, data);
 
@@ -104,7 +143,17 @@ export const getCurrentUser = () => {
   const saved = localStorage.getItem(KEYS.CURRENT_USER);
   if (!saved) return null;
   try {
-    return JSON.parse(saved);
+    const user = JSON.parse(saved);
+    if (!user || !user.id) return null;
+    const deleted = getDeletedUserIds();
+    if (deleted.includes(user.id.toUpperCase())) return null;
+
+    return {
+      ...user,
+      allowedTabs: Array.isArray(user.allowedTabs) && user.allowedTabs.length > 0
+        ? user.allowedTabs
+        : getDefaultTabsForRole(user.role)
+    };
   } catch {
     return null;
   }

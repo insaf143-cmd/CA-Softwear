@@ -23,9 +23,10 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
-import { clearAllDataAndStartFresh } from '../utils/storage';
+import { clearAllDataAndStartFresh, addDeletedUserId, getDefaultTabsForRole } from '../utils/storage';
 import { isFirebaseConfigured } from '../config/firebase';
 import { registerWithFirebaseAuth, provisionStaffToFirebaseAuth } from '../services/firebaseAuthService';
+import { deleteSingleUserFromFirebase } from '../services/firebaseService';
 
 export const AVAILABLE_MODULE_TABS = [
   { id: 'dashboard', label: 'Dashboard', desc: 'Firm overview, statistics, and shortcuts' },
@@ -42,37 +43,7 @@ export const AVAILABLE_MODULE_TABS = [
   { id: 'users', label: 'Staff & Role Control', desc: 'Manage user credentials and tab access permissions' }
 ];
 
-export const getDefaultTabsForRole = (role) => {
-  if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
-    return AVAILABLE_MODULE_TABS.map((t) => t.id);
-  }
-  if (role === 'MANAGER') {
-    return [
-      'dashboard',
-      'tasks',
-      'reports',
-      'evidence',
-      'inwardOutward',
-      'clients',
-      'gst',
-      'it',
-      'roc',
-      'billing',
-      'calendar'
-    ];
-  }
-  // NORMAL_USER (Article Staff)
-  return [
-    'dashboard',
-    'tasks',
-    'evidence',
-    'inwardOutward',
-    'clients',
-    'gst',
-    'it',
-    'calendar'
-  ];
-};
+export { getDefaultTabsForRole };
 
 export default function UserManagement({
   users,
@@ -135,7 +106,7 @@ export default function UserManagement({
     setUsers(updated);
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (userId === currentUser.id) {
       alert('You cannot delete your own logged-in account!');
       return;
@@ -144,12 +115,31 @@ export default function UserManagement({
     if (!target) return;
 
     if (
-      window.confirm(
-        `Are you sure you want to permanently delete user "${target.name}" (ID: ${userId})?`
+      !window.confirm(
+        `⚠️ PERMANENTLY DELETE USER ACCOUNT?\n\nUser Name: "${target.name}"\nLogin ID: ${userId}\nRole: ${target.role}\n\nThis will completely delete this user from:\n✓ Local Staff Directory\n✓ Central LAN Database\n✓ Google Firebase Cloud Database\n\nThe deleted user will be permanently blocked from logging in.`
       )
     ) {
-      setUsers(users.filter((u) => u.id !== userId));
+      return;
     }
+
+    // 1. Mark as permanently deleted in storage blacklist so it can never resurrect
+    addDeletedUserId(userId);
+
+    // 2. Remove from React state & local storage
+    const remaining = users.filter((u) => u.id !== userId);
+    setUsers(remaining);
+
+    // 3. Delete from Google Firebase Firestore
+    if (isFirebaseConfigured) {
+      try {
+        await deleteSingleUserFromFirebase(userId);
+        console.log(`[Firebase AutoSync] User ${userId} successfully deleted from cloud.`);
+      } catch (err) {
+        console.warn(`[Firebase AutoSync] Error deleting user ${userId}:`, err);
+      }
+    }
+
+    alert(`User "${target.name}" (ID: ${userId}) deleted successfully.\n\nThey have been blocked and deleted across local, Central LAN, and Firebase Cloud.`);
   };
 
   const handleResetPassword = (e) => {
