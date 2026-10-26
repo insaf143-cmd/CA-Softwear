@@ -144,40 +144,13 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
       <div className="absolute top-1/3 left-10 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-xl space-y-6 relative z-10 my-auto">
-        {/* Prominent TAXBAY Quote & Header Branding */}
-        <div className="text-center space-y-3">
+        {/* Prominent TAXBAY Quote */}
+        <div className="text-center">
           {/* Quote Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-400/40 text-amber-300 font-extrabold text-sm md:text-base tracking-wider uppercase shadow-lg shadow-amber-500/10">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-400/40 text-amber-300 font-extrabold text-sm md:text-base tracking-wider uppercase shadow-lg shadow-amber-500/10">
             <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
             <span>“ Welcome to TAXBAY ”</span>
             <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800">
-                TAXBAY Practice Suite
-              </span>
-              
-              {isFirebaseConfigured ? (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Firebase Cloud Active
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                  Offline Local Mode
-                </span>
-              )}
-            </div>
-
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center justify-center gap-2">
-              <span className="text-amber-400">TAXBAY</span> &bull; {currentProfile.firmName || 'Chartered Accountants'}
-            </h1>
-            <p className="text-xs text-blue-200/80 font-medium mt-1">
-              {currentProfile.tagline || 'Chartered Accountants & Tax Advisors'} &bull; FRN: <span className="font-mono text-amber-300 font-bold">{currentProfile.frn || '129988W'}</span>
-            </p>
           </div>
         </div>
 

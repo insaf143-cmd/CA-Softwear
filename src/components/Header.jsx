@@ -85,10 +85,11 @@ export default function Header({
     }
   };
 
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isManagerOrAdmin =
-    currentUser.role === 'SUPER_ADMIN' ||
-    currentUser.role === 'ADMIN' ||
-    currentUser.role === 'MANAGER';
+    currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'ADMIN' ||
+    currentUser?.role === 'MANAGER';
 
   return (
     <header
@@ -192,52 +193,58 @@ export default function Header({
           )}
         </button>
 
-        {/* Permanent Link & PC Install Button */}
-        <button
-          onClick={() => setShowPermanentLinkModal(true)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition border ${
-            isDayMode
-              ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-              : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700'
-          }`}
-          title="Open Permanent Link & Install App on PC"
-        >
-          <Laptop className="w-3.5 h-3.5 text-amber-500" />
-          <span className="hidden sm:inline">Permanent Link</span>
-        </button>
+        {/* Permanent Link & PC Install Button - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (
+          <button
+            onClick={() => setShowPermanentLinkModal(true)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition border ${
+              isDayMode
+                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700'
+            }`}
+            title="Open Permanent Link & Install App on PC"
+          >
+            <Laptop className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden sm:inline">Permanent Link</span>
+          </button>
+        )}
 
-        {/* GitHub Auto-Connect Pill */}
-        <button
-          onClick={onOpenGitHubModal}
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold border transition ${
-            isDayMode
-              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-          }`}
-          title="Connected GitHub: insaf143-cmd/CA-Softwear"
-        >
-          <GitHubIcon className="w-3.5 h-3.5" />
-          <span className="hidden 2xl:inline">GitHub</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        </button>
+        {/* GitHub Auto-Connect Pill - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (
+          <button
+            onClick={onOpenGitHubModal}
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              isDayMode
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
+            title="Connected GitHub: insaf143-cmd/CA-Softwear"
+          >
+            <GitHubIcon className="w-3.5 h-3.5" />
+            <span className="hidden 2xl:inline">GitHub</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+        )}
 
-        {/* Firebase DB Config Button */}
-        <button
-          onClick={onOpenFirebaseModal}
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold border transition ${
-            isFirebaseConfigured
-              ? 'bg-amber-500/15 text-amber-500 border-amber-500/40 hover:bg-amber-500/25'
-              : isDayMode
-              ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-          }`}
-          title="Firebase Cloud Database Settings"
-        >
-          <Database className={`w-3.5 h-3.5 ${isFirebaseConfigured ? 'text-amber-500' : 'text-slate-400'}`} />
-          <span className="hidden 2xl:inline">
-            {isFirebaseConfigured ? 'Firebase Active' : 'Firebase Sync'}
-          </span>
-        </button>
+        {/* Firebase DB Config Button - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (
+          <button
+            onClick={onOpenFirebaseModal}
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              isFirebaseConfigured
+                ? 'bg-amber-500/15 text-amber-500 border-amber-500/40 hover:bg-amber-500/25'
+                : isDayMode
+                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+            }`}
+            title="Firebase Cloud Database Settings"
+          >
+            <Database className={`w-3.5 h-3.5 ${isFirebaseConfigured ? 'text-amber-500' : 'text-slate-400'}`} />
+            <span className="hidden 2xl:inline">
+              {isFirebaseConfigured ? 'Firebase Active' : 'Firebase Sync'}
+            </span>
+          </button>
+        )}
 
         {/* Manager Approvals Alert Pill */}
         {isManagerOrAdmin && pendingReviewCount > 0 && (
@@ -251,34 +258,51 @@ export default function Header({
           </button>
         )}
 
-        {/* User Role Switcher */}
-        <div
-          className={`relative flex items-center border rounded-xl px-2 py-1 text-xs ${
-            isDayMode
-              ? 'bg-slate-100 border-slate-300 text-slate-800'
-              : 'bg-slate-800 border-slate-700 text-slate-200'
-          }`}
-        >
-          <UserCheck className="w-3.5 h-3.5 text-blue-500 mr-1.5 shrink-0" />
-          <select
-            value={currentUser.id}
-            onChange={(e) => {
-              const selected = users.find((u) => u.id === e.target.value);
-              if (selected) onSwitchUser(selected);
-            }}
-            className="bg-transparent font-semibold focus:outline-none cursor-pointer text-xs pr-1 max-w-[110px] md:max-w-[140px] truncate"
+        {/* User Role Switcher (Super Admin) OR User Name Display (Other Users) */}
+        {isSuperAdmin ? (
+          <div
+            className={`relative flex items-center border rounded-xl px-2 py-1 text-xs ${
+              isDayMode
+                ? 'bg-slate-100 border-slate-300 text-slate-800'
+                : 'bg-slate-800 border-slate-700 text-slate-200'
+            }`}
           >
-            {users.map((u) => (
-              <option
-                key={u.id}
-                value={u.id}
-                className={isDayMode ? 'bg-white text-slate-800' : 'bg-slate-900 text-slate-200'}
-              >
-                {u.name} ({u.role === 'SUPER_ADMIN' ? 'Admin' : u.role === 'MANAGER' ? 'Mgr' : 'Staff'})
-              </option>
-            ))}
-          </select>
-        </div>
+            <UserCheck className="w-3.5 h-3.5 text-blue-500 mr-1.5 shrink-0" />
+            <select
+              value={currentUser.id}
+              onChange={(e) => {
+                const selected = users.find((u) => u.id === e.target.value);
+                if (selected) onSwitchUser(selected);
+              }}
+              className="bg-transparent font-semibold focus:outline-none cursor-pointer text-xs pr-1 max-w-[110px] md:max-w-[140px] truncate"
+              title="Switch user account (Super Admin only)"
+            >
+              {users.map((u) => (
+                <option
+                  key={u.id}
+                  value={u.id}
+                  className={isDayMode ? 'bg-white text-slate-800' : 'bg-slate-900 text-slate-200'}
+                >
+                  {u.name} ({u.role === 'SUPER_ADMIN' ? 'Admin' : u.role === 'MANAGER' ? 'Mgr' : 'Staff'})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div
+            className={`flex items-center border rounded-xl px-2.5 py-1 text-xs font-semibold ${
+              isDayMode
+                ? 'bg-slate-100 border-slate-300 text-slate-800'
+                : 'bg-slate-800 border-slate-700 text-slate-200'
+            }`}
+            title={`Signed in as ${currentUser.name}`}
+          >
+            <UserCheck className="w-3.5 h-3.5 text-blue-500 mr-1.5 shrink-0" />
+            <span className="font-semibold text-xs truncate max-w-[120px] md:max-w-[160px]">
+              {currentUser.name}
+            </span>
+          </div>
+        )}
 
         {/* Tax Calculator Trigger */}
         <button
