@@ -63,6 +63,7 @@ export default function UserManagement({
   // Tab Access Control State
   const [editingUserTabs, setEditingUserTabs] = useState(null);
   const [selectedTabsForEdit, setSelectedTabsForEdit] = useState([]);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   const [newUser, setNewUser] = useState({
     id: '',
@@ -550,24 +551,44 @@ export default function UserManagement({
 
       {/* Add User & Password Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg p-6 md:p-8 space-y-4 shadow-2xl my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-[#0e172f] border border-blue-800 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+            {/* Modal Header (Fixed at top) */}
+            <div className="p-5 pb-3 border-b border-blue-900/80 flex items-center justify-between shrink-0">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-400" />
-                Create New User (Set User ID & Password)
+                <UserPlus className="w-5 h-5 text-amber-400" />
+                <span>Create New User & Set Password</span>
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-              {/* User ID & Password in first row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Form Body (Scrollable with always-visible inputs) */}
+            <form onSubmit={handleCreateUser} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs">
+              {/* Row 1: Full Name & User ID */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    User ID (Login Username) <span className="text-emerald-400">*</span>
+                  <label className="block text-slate-200 font-semibold mb-1">
+                    Full Name <span className="text-amber-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    placeholder="e.g. Fazil Khan"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-200 font-semibold mb-1">
+                    User ID (Login Username) <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -579,69 +600,88 @@ export default function UserManagement({
                         id: e.target.value.toUpperCase().replace(/\s+/g, '_')
                       })
                     }
-                    placeholder="e.g. ROHAN, CA01, MGR1, STAFF10"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500 uppercase"
+                    placeholder="e.g. FAZIL, MGR01, STAFF10"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-amber-400 font-mono font-bold uppercase placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
-                  <span className="text-[10px] text-slate-500 mt-0.5 block">
-                    Unique ID for user to log in.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Login Password <span className="text-amber-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="e.g. StaffPass@123"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="text-[10px] text-slate-500 mt-0.5 block">
-                    Password given to this user.
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Staff uses this User ID to sign into TAXBAY.
                   </span>
                 </div>
               </div>
 
-              {/* Name & Designation */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Row 2: Login Password & Designation */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Full Name <span className="text-emerald-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    placeholder="e.g. Rohan Gupta"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-200 font-semibold">
+                      Login Password <span className="text-amber-400">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewUser({
+                          ...newUser,
+                          password: 'Pass@' + Math.floor(1000 + Math.random() * 9000)
+                        })
+                      }
+                      className="text-[10px] text-amber-400 hover:underline font-bold"
+                    >
+                      Generate Pass
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showNewUserPassword ? 'text' : 'password'}
+                      required
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="Enter user password"
+                      className="w-full px-3 py-2 pr-9 bg-slate-900 border border-slate-700 rounded-xl text-amber-300 font-mono font-bold placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewUserPassword(!showNewUserPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-300 p-0.5"
+                      title={showNewUserPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showNewUserPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Password given to this user to sign in.
+                  </span>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Designation</label>
+                  <label className="block text-slate-200 font-semibold mb-1">
+                    Designation
+                  </label>
                   <input
                     type="text"
                     value={newUser.designation}
                     onChange={(e) => setNewUser({ ...newUser, designation: e.target.value })}
-                    placeholder="e.g. Senior Article Assistant"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
+                    placeholder="e.g. Audit Manager, Article Assistant"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
               </div>
 
-              {/* User Role */}
+              {/* Row 3: User Role & Permissions */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  User Role & Permissions <span className="text-emerald-400">*</span>
+                <label className="block text-slate-200 font-semibold mb-1">
+                  User Role & Permissions <span className="text-amber-400">*</span>
                 </label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500 font-semibold"
+                  onChange={(e) => {
+                    const nextRole = e.target.value;
+                    setNewUser({
+                      ...newUser,
+                      role: nextRole,
+                      allowedTabs: getDefaultTabsForRole(nextRole)
+                    });
+                  }}
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-amber-400 font-semibold cursor-pointer"
                 >
                   <option value="NORMAL_USER">
                     Normal User / Article Staff (Restricted ONLY to allocated works)
@@ -662,38 +702,38 @@ export default function UserManagement({
                 </select>
               </div>
 
-              {/* Email & Mobile */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Row 4: Email Address & Mobile Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Email Address</label>
+                  <label className="block text-slate-200 font-semibold mb-1">Email Address</label>
                   <input
                     type="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="rohan@cadesk.in"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
+                    placeholder="e.g. fazil@gmail.com"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Mobile Phone</label>
+                  <label className="block text-slate-200 font-semibold mb-1">Mobile Phone</label>
                   <input
                     type="text"
                     value={newUser.mobile}
                     onChange={(e) => setNewUser({ ...newUser, mobile: e.target.value })}
                     placeholder="+91 98765 43210"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
               </div>
 
-              {/* Tab Access Permissions Selection */}
+              {/* Row 5: Allowed Module Tabs */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-slate-200 font-semibold text-xs">
                     Allowed Module Tabs <span className="text-amber-400">*</span>
                   </label>
-                  <div className="flex gap-1.5 text-[10px]">
+                  <div className="flex gap-2 text-[10px]">
                     <button
                       type="button"
                       onClick={() =>
@@ -702,7 +742,7 @@ export default function UserManagement({
                           allowedTabs: AVAILABLE_MODULE_TABS.map((t) => t.id)
                         })
                       }
-                      className="text-amber-400 hover:underline"
+                      className="text-amber-400 hover:underline font-bold"
                     >
                       Allow All
                     </button>
@@ -715,13 +755,14 @@ export default function UserManagement({
                           allowedTabs: getDefaultTabsForRole(newUser.role)
                         })
                       }
-                      className="text-blue-400 hover:underline"
+                      className="text-blue-400 hover:underline font-bold"
                     >
                       Role Default
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-900/80 rounded-xl border border-slate-700">
+
+                <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-2 bg-[#080d1f] rounded-xl border border-slate-700">
                   {AVAILABLE_MODULE_TABS.map((tab) => {
                     const isChecked = (newUser.allowedTabs || []).includes(tab.id);
                     return (
@@ -729,8 +770,8 @@ export default function UserManagement({
                         key={tab.id}
                         className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer text-[11px] transition ${
                           isChecked
-                            ? 'bg-blue-950/60 border-amber-400/40 text-amber-300 font-semibold'
-                            : 'bg-slate-800/40 border-slate-800 text-slate-400'
+                            ? 'bg-blue-950/60 border-amber-400/50 text-amber-300 font-semibold'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400'
                         }`}
                       >
                         <input
@@ -752,13 +793,13 @@ export default function UserManagement({
                 </div>
               </div>
 
-              {/* Allocated Clients Selection (if any exist) */}
+              {/* Row 6: Allocated Clients (if any) */}
               {clients && clients.length > 0 && (
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
                     Allocate Client Files to User:
                   </label>
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto p-2 bg-slate-800/60 rounded-xl border border-slate-700">
+                  <div className="space-y-1 max-h-28 overflow-y-auto p-2 bg-[#080d1f] rounded-xl border border-slate-700">
                     {clients.map((c) => (
                       <label key={c.id} className="flex items-center gap-2 cursor-pointer text-slate-300 text-xs">
                         <input
@@ -767,15 +808,15 @@ export default function UserManagement({
                           onChange={() => toggleClientAllocation(c.id)}
                           className="rounded accent-emerald-500"
                         />
-                        <span>{c.name} ({c.pan})</span>
+                        <span className="truncate">{c.name} ({c.pan})</span>
                       </label>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Submit Buttons */}
-              <div className="pt-3 flex justify-end gap-3 border-t border-slate-800">
+              {/* Fixed Modal Footer inside Form */}
+              <div className="pt-3 flex justify-end gap-3 border-t border-blue-900/80 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
@@ -787,7 +828,7 @@ export default function UserManagement({
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold shadow-lg shadow-amber-500/20 transition"
                 >
-                  Save User & Set Password
+                  Create User Account
                 </button>
               </div>
             </form>
@@ -797,9 +838,9 @@ export default function UserManagement({
 
       {/* Edit Tab Access Permissions Modal */}
       {editingUserTabs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-[#0e172f] border border-blue-800 rounded-3xl w-full max-w-xl p-6 md:p-8 space-y-4 shadow-2xl my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-blue-900/80">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-[#0e172f] border border-blue-800 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl my-auto overflow-hidden">
+            <div className="p-5 pb-3 border-b border-blue-900/80 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
                   <Layers className="w-5 h-5" />
@@ -811,77 +852,84 @@ export default function UserManagement({
                   </p>
                 </div>
               </div>
-              <button onClick={() => setEditingUserTabs(null)} className="text-slate-400 hover:text-white">
+              <button
+                type="button"
+                onClick={() => setEditingUserTabs(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
-              Select which navigation tabs this user is permitted to see and access. Unchecked tabs will be blocked and hidden from their navigation sidebar.
-            </p>
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs">
+              <p className="text-xs text-slate-300">
+                Select which navigation tabs this user is permitted to see and access. Unchecked tabs will be blocked and hidden from their navigation sidebar.
+              </p>
 
-            {/* Quick Actions */}
-            <div className="flex items-center gap-2 flex-wrap text-xs">
-              <button
-                type="button"
-                onClick={() => setSelectedTabsForEdit(AVAILABLE_MODULE_TABS.map((t) => t.id))}
-                className="px-2.5 py-1 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 font-semibold"
-              >
-                + Allow All Tabs
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedTabsForEdit(getDefaultTabsForRole(editingUserTabs.role))}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
-              >
-                ↺ Reset to Role Defaults
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedTabsForEdit(['dashboard', 'tasks'])}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold"
-              >
-                Minimal (Tasks Only)
-              </button>
-            </div>
+              {/* Quick Actions */}
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTabsForEdit(AVAILABLE_MODULE_TABS.map((t) => t.id))}
+                  className="px-2.5 py-1 rounded-lg bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 font-semibold"
+                >
+                  + Allow All Tabs
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTabsForEdit(getDefaultTabsForRole(editingUserTabs.role))}
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
+                >
+                  ↺ Reset to Role Defaults
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTabsForEdit(['dashboard', 'tasks'])}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold"
+                >
+                  Minimal (Tasks Only)
+                </button>
+              </div>
 
-            {/* Tab Checkboxes Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1 pr-2">
-              {AVAILABLE_MODULE_TABS.map((tab) => {
-                const isChecked = selectedTabsForEdit.includes(tab.id);
-                return (
-                  <label
-                    key={tab.id}
-                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition text-xs ${
-                      isChecked
-                        ? 'bg-blue-950/60 border-amber-400/50 text-white'
-                        : 'bg-[#0a1128]/80 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        if (isChecked) {
-                          setSelectedTabsForEdit(selectedTabsForEdit.filter((id) => id !== tab.id));
-                        } else {
-                          setSelectedTabsForEdit([...selectedTabsForEdit, tab.id]);
-                        }
-                      }}
-                      className="mt-0.5 rounded accent-amber-400"
-                    />
-                    <div>
-                      <div className="font-bold flex items-center gap-1.5">
-                        <span className={isChecked ? 'text-amber-300' : 'text-slate-300'}>{tab.label}</span>
+              {/* Tab Checkboxes Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1">
+                {AVAILABLE_MODULE_TABS.map((tab) => {
+                  const isChecked = selectedTabsForEdit.includes(tab.id);
+                  return (
+                    <label
+                      key={tab.id}
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition text-xs ${
+                        isChecked
+                          ? 'bg-blue-950/60 border-amber-400/50 text-white'
+                          : 'bg-[#0a1128]/80 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedTabsForEdit(selectedTabsForEdit.filter((id) => id !== tab.id));
+                          } else {
+                            setSelectedTabsForEdit([...selectedTabsForEdit, tab.id]);
+                          }
+                        }}
+                        className="mt-0.5 rounded accent-amber-400"
+                      />
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span className={isChecked ? 'text-amber-300' : 'text-slate-300'}>{tab.label}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{tab.desc}</div>
                       </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{tab.desc}</div>
-                    </div>
-                  </label>
-                );
-              })}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="pt-3 border-t border-blue-900/80 flex items-center justify-between text-xs">
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-blue-900/80 flex items-center justify-between text-xs shrink-0">
               <span className="text-slate-400">
                 <strong className="text-amber-400">{selectedTabsForEdit.length}</strong> of {AVAILABLE_MODULE_TABS.length} Modules Allowed
               </span>
