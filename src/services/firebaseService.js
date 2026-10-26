@@ -492,27 +492,29 @@ export const clearAllFirebaseData = async (masterAdmin) => {
     for (const colName of collectionsToWipe) {
       try {
         const snap = await getDocs(collection(db, colName));
-        const deletePromises = snap.docs.map((docSnap) => deleteDoc(doc(db, colName, docSnap.id)));
-        await Promise.all(deletePromises);
+        for (const docSnap of snap.docs) {
+          await deleteDoc(doc(db, colName, docSnap.id));
+        }
         console.log(`[Firebase Clear] Cleared ${snap.docs.length} docs from ${colName}`);
       } catch (err) {
         console.warn(`[Firebase Clear] Error clearing ${colName}:`, err.message);
       }
     }
 
-    // Reset users collection to keep only master admin
-    if (masterAdmin && masterAdmin.id) {
-      try {
-        const userSnap = await getDocs(collection(db, COLLECTIONS.USERS));
-        const deletePromises = userSnap.docs
-          .filter((d) => d.id !== masterAdmin.id)
-          .map((d) => deleteDoc(doc(db, COLLECTIONS.USERS, d.id)));
-        await Promise.all(deletePromises);
+    // Purge sample dummy users U1 to U5, ensure Master Admin exists
+    try {
+      const userSnap = await getDocs(collection(db, COLLECTIONS.USERS));
+      for (const d of userSnap.docs) {
+        if (['U1', 'U2', 'U3', 'U4', 'U5'].includes(d.id)) {
+          await deleteDoc(doc(db, COLLECTIONS.USERS, d.id));
+        }
+      }
+      if (masterAdmin && masterAdmin.id) {
         await setDoc(doc(db, COLLECTIONS.USERS, masterAdmin.id), masterAdmin, { merge: true });
         console.log(`[Firebase Clear] Users collection reset to master admin: ${masterAdmin.id}`);
-      } catch (err) {
-        console.warn(`[Firebase Clear] Error resetting users:`, err.message);
       }
+    } catch (err) {
+      console.warn(`[Firebase Clear] Error resetting users:`, err.message);
     }
 
     return { success: true };

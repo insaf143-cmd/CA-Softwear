@@ -266,7 +266,7 @@ export const clearAllDataAndStartFresh = async (onProgress) => {
   if (onProgress) onProgress('Complete! Reloading with 100% clean database...');
   setTimeout(() => {
     window.location.reload();
-  }, 400);
+  }, 1200);
 };
 
 export const DEFAULT_FIRM_PROFILE = {

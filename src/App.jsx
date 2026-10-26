@@ -466,138 +466,66 @@ export default function App() {
     };
   }, []);
 
-  // Subscribe to Firebase Firestore if connected (Merge-Never-Wipe)
+  // Subscribe to Firebase Firestore if connected (Real-Time Cloud Synchronization)
   useEffect(() => {
-    const isFreshInit = () => localStorage.getItem('taxbay_fresh_initialized') === 'true';
+    if (!isFirebaseConfigured) return;
 
     const unsubClients = subscribeToClientsFromFirebase((cloudClients) => {
       if (Array.isArray(cloudClients)) {
-        if (cloudClients.length === 0 && isFreshInit()) {
-          setClientsState([]);
-          saveClients([]);
-          return;
-        }
-        if (cloudClients.length > 0) {
-          setClientsState((localClients) => {
-            const merged = mergeListsById(localClients, cloudClients);
-            saveClients(merged);
-            return merged;
-          });
-        }
+        setClientsState(cloudClients);
+        saveClients(cloudClients);
       }
     });
 
     const unsubTasks = subscribeToTasksFromFirebase((cloudTasks) => {
       if (Array.isArray(cloudTasks)) {
-        if (cloudTasks.length === 0 && isFreshInit()) {
-          setTasksState([]);
-          saveTasks([]);
-          return;
-        }
-        if (cloudTasks.length > 0) {
-          setTasksState((localTasks) => {
-            const merged = mergeListsById(localTasks, cloudTasks);
-            saveTasks(merged);
-            return merged;
-          });
-        }
+        setTasksState(cloudTasks);
+        saveTasks(cloudTasks);
       }
     });
 
     const unsubInward = subscribeToInwardOutwardFromFirebase((cloudInward) => {
       if (Array.isArray(cloudInward)) {
-        if (cloudInward.length === 0 && isFreshInit()) {
-          setInwardOutwardRecordsState([]);
-          saveInwardOutwardRecords([]);
-          return;
-        }
-        if (cloudInward.length > 0) {
-          setInwardOutwardRecordsState((localInward) => {
-            const merged = mergeListsById(localInward, cloudInward);
-            saveInwardOutwardRecords(merged);
-            return merged;
-          });
-        }
+        setInwardOutwardRecordsState(cloudInward);
+        saveInwardOutwardRecords(cloudInward);
       }
     });
 
     const unsubGST = subscribeToGSTWorkFromFirebase((cloudGST) => {
       if (Array.isArray(cloudGST)) {
-        if (cloudGST.length === 0 && isFreshInit()) {
-          setGstWorkState([]);
-          saveGSTWork([]);
-          return;
-        }
-        if (cloudGST.length > 0) {
-          setGstWorkState((local) => {
-            const merged = mergeListsById(local, cloudGST);
-            saveGSTWork(merged);
-            return merged;
-          });
-        }
+        setGstWorkState(cloudGST);
+        saveGSTWork(cloudGST);
       }
     });
 
     const unsubIT = subscribeToITWorkFromFirebase((cloudIT) => {
       if (Array.isArray(cloudIT)) {
-        if (cloudIT.length === 0 && isFreshInit()) {
-          setItWorkState([]);
-          saveITWork([]);
-          return;
-        }
-        if (cloudIT.length > 0) {
-          setItWorkState((local) => {
-            const merged = mergeListsById(local, cloudIT);
-            saveITWork(merged);
-            return merged;
-          });
-        }
+        setItWorkState(cloudIT);
+        saveITWork(cloudIT);
       }
     });
 
     const unsubROC = subscribeToROCWorkFromFirebase((cloudROC) => {
       if (Array.isArray(cloudROC)) {
-        if (cloudROC.length === 0 && isFreshInit()) {
-          setRocWorkState([]);
-          saveROCWork([]);
-          return;
-        }
-        if (cloudROC.length > 0) {
-          setRocWorkState((local) => {
-            const merged = mergeListsById(local, cloudROC);
-            saveROCWork(merged);
-            return merged;
-          });
-        }
+        setRocWorkState(cloudROC);
+        saveROCWork(cloudROC);
       }
     });
 
     const unsubInvoices = subscribeToInvoicesFromFirebase((cloudInvoices) => {
       if (Array.isArray(cloudInvoices)) {
-        if (cloudInvoices.length === 0 && isFreshInit()) {
-          setInvoicesState([]);
-          saveInvoices([]);
-          return;
-        }
-        if (cloudInvoices.length > 0) {
-          setInvoicesState((local) => {
-            const merged = mergeListsById(local, cloudInvoices);
-            saveInvoices(merged);
-            return merged;
-          });
-        }
+        setInvoicesState(cloudInvoices);
+        saveInvoices(cloudInvoices);
       }
     });
 
     const unsubUsers = subscribeToUsersFromFirebase((cloudUsers) => {
       if (cloudUsers && Array.isArray(cloudUsers)) {
         const deleted = getDeletedUserIds();
-        const cleanUsers = cloudUsers.filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
-        setUsersState((local) => {
-          const merged = mergeListsById(local, cleanUsers).filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()));
-          saveUsers(merged);
-          return merged;
-        });
+        const cleanUsers = cloudUsers
+          .filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()) && !['U1', 'U2', 'U3', 'U4', 'U5'].includes(u.id));
+        setUsersState(cleanUsers);
+        saveUsers(cleanUsers);
       }
     });
 
@@ -607,30 +535,6 @@ export default function App() {
         saveFirmProfile(cloudProfile);
       }
     });
-
-    // Auto-sync existing local data to Firebase Cloud in background
-    if (isFirebaseConfigured) {
-      const timer = setTimeout(() => {
-        syncClientsToFirebase(getClients());
-        syncTasksToFirebase(getTasks());
-        syncInwardOutwardToFirebase(getInwardOutwardRecords());
-        syncUsersToFirebase(getUsers());
-        syncFirmProfileToFirebase(getFirmProfile());
-      }, 2500);
-
-      return () => {
-        clearTimeout(timer);
-        if (unsubClients) unsubClients();
-        if (unsubGST) unsubGST();
-        if (unsubIT) unsubIT();
-        if (unsubTasks) unsubTasks();
-        if (unsubInvoices) unsubInvoices();
-        if (unsubROC) unsubROC();
-        if (unsubInward) unsubInward();
-        if (unsubUsers) unsubUsers();
-        if (unsubProfile) unsubProfile();
-      };
-    }
 
     return () => {
       if (unsubClients) unsubClients();

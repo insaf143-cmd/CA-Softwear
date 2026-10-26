@@ -22,7 +22,8 @@ import {
   Laptop
 } from 'lucide-react';
 import { getFirmProfile, getDeletedUserIds } from '../utils/storage';
-import { isFirebaseConfigured } from '../config/firebase';
+import { isFirebaseConfigured, db } from '../config/firebase';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { signInWithFirebaseAuth } from '../services/firebaseAuthService';
 
 export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa, installPromptAvailable }) {
@@ -50,13 +51,36 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
       return;
     }
 
-    // Check if matching staff exists in active firm users list
-    const targetUser = users.find(
+    // Check if matching staff exists in active firm users list (with Firebase fallback)
+    let targetUser = users.find(
       (u) =>
         u.id?.toUpperCase() === identifierUpper ||
         u.email?.toLowerCase() === identifierLower ||
         u.name?.toLowerCase() === identifierLower
     );
+
+    // If not found in local memory yet (e.g. initial load on installed device), query Firebase Firestore directly!
+    if (!targetUser && isFirebaseConfigured && db) {
+      try {
+        const snap = await getDoc(doc(db, 'users', identifierUpper));
+        if (snap.exists()) {
+          targetUser = snap.data();
+        } else {
+          const qSnap = await getDocs(collection(db, 'users'));
+          const found = qSnap.docs
+            .map((d) => d.data())
+            .find(
+              (u) =>
+                u.id?.toUpperCase() === identifierUpper ||
+                u.email?.toLowerCase() === identifierLower ||
+                u.name?.toLowerCase() === identifierLower
+            );
+          if (found) targetUser = found;
+        }
+      } catch (err) {
+        console.warn('Firebase direct user lookup:', err.message);
+      }
+    }
 
     if (!targetUser) {
       setErrorMsg('User ID or Email not found in firm database. Please check credentials.');
