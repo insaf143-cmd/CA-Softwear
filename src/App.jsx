@@ -44,7 +44,12 @@ import {
   syncGSTWorkToFirebase, subscribeToGSTWorkFromFirebase,
   syncITWorkToFirebase, subscribeToITWorkFromFirebase,
   syncTasksToFirebase, subscribeToTasksFromFirebase,
-  syncInvoicesToFirebase, subscribeToInvoicesFromFirebase
+  syncInvoicesToFirebase, subscribeToInvoicesFromFirebase,
+  syncROCWorkToFirebase, subscribeToROCWorkFromFirebase,
+  syncInwardOutwardToFirebase, subscribeToInwardOutwardFromFirebase,
+  syncUsersToFirebase, subscribeToUsersFromFirebase,
+  syncFirmProfileToFirebase, subscribeToFirmProfileFromFirebase,
+  uploadAllDataToFirebase
 } from './services/firebaseService';
 
 import {
@@ -115,6 +120,7 @@ export default function App() {
   const setFirmProfile = (profile) => {
     setFirmProfileState(profile);
     saveFirmProfile(profile);
+    syncFirmProfileToFirebase(profile);
     syncToCentralServer({ firmProfile: profile });
   };
 
@@ -127,6 +133,7 @@ export default function App() {
   const setInwardOutwardRecords = (records) => {
     setInwardOutwardRecordsState(records);
     saveInwardOutwardRecords(records);
+    syncInwardOutwardToFirebase(records);
     syncToCentralServer({ inwardOutwardRecords: records });
   };
 
@@ -134,6 +141,7 @@ export default function App() {
   const setUsers = (data) => {
     setUsersState(data);
     saveUsers(data);
+    syncUsersToFirebase(data);
     syncToCentralServer({ users: data });
   };
   const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
@@ -176,6 +184,7 @@ export default function App() {
   const setRocWork = (data) => {
     setRocWorkState(data);
     saveROCWork(data);
+    syncROCWorkToFirebase(data);
     syncToCentralServer({ rocWork: data });
   };
   const setTasks = (data) => {
@@ -280,6 +289,10 @@ export default function App() {
     const unsubIT = subscribeToITWorkFromFirebase((data) => setItWorkState(data));
     const unsubTasks = subscribeToTasksFromFirebase((data) => setTasksState(data));
     const unsubInvoices = subscribeToInvoicesFromFirebase((data) => setInvoicesState(data));
+    const unsubROC = subscribeToROCWorkFromFirebase((data) => setRocWorkState(data));
+    const unsubInward = subscribeToInwardOutwardFromFirebase((data) => setInwardOutwardRecordsState(data));
+    const unsubUsers = subscribeToUsersFromFirebase((data) => setUsersState(data));
+    const unsubProfile = subscribeToFirmProfileFromFirebase((data) => setFirmProfileState(data));
 
     return () => {
       if (unsubClients) unsubClients();
@@ -287,6 +300,10 @@ export default function App() {
       if (unsubIT) unsubIT();
       if (unsubTasks) unsubTasks();
       if (unsubInvoices) unsubInvoices();
+      if (unsubROC) unsubROC();
+      if (unsubInward) unsubInward();
+      if (unsubUsers) unsubUsers();
+      if (unsubProfile) unsubProfile();
     };
   }, []);
 
@@ -570,6 +587,18 @@ export default function App() {
       {showFirebaseModal && (
         <FirebaseConfigModal
           onClose={() => setShowFirebaseModal(false)}
+          currentData={{
+            clients,
+            gstWork,
+            itWork,
+            rocWork,
+            tasks,
+            invoices,
+            inwardOutwardRecords,
+            users,
+            firmProfile
+          }}
+          onUploadAll={uploadAllDataToFirebase}
         />
       )}
 
