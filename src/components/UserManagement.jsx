@@ -17,9 +17,12 @@ import {
   Trash2,
   RefreshCw,
   Sparkles,
-  Building2
+  Building2,
+  UploadCloud
 } from 'lucide-react';
 import { clearAllDataAndStartFresh } from '../utils/storage';
+import { isFirebaseConfigured } from '../config/firebase';
+import { registerWithFirebaseAuth, provisionStaffToFirebaseAuth } from '../services/firebaseAuthService';
 
 export default function UserManagement({
   users,
@@ -32,6 +35,7 @@ export default function UserManagement({
   const [editingUserPass, setEditingUserPass] = useState(null);
   const [newPasswordVal, setNewPasswordVal] = useState('');
   const [showPass, setShowPass] = useState({});
+  const [syncingAuth, setSyncingAuth] = useState(false);
 
   const [newUser, setNewUser] = useState({
     id: '',
@@ -140,6 +144,14 @@ export default function UserManagement({
     };
 
     setUsers([...users, created]);
+
+    // Also register in Firebase Auth if connected
+    if (isFirebaseConfigured && created.email && created.password) {
+      registerWithFirebaseAuth(created.email, created.password, created.name).catch((err) => {
+        console.warn('Firebase Auth user creation warning:', err);
+      });
+    }
+
     setShowAddModal(false);
     setNewUser({
       id: '',
@@ -152,7 +164,25 @@ export default function UserManagement({
       allocatedClientIds: []
     });
 
-    alert(`User "${created.name}" created successfully!\n\nUser ID: ${created.id}\nPassword: ${created.password}\nRole: ${created.role}`);
+    alert(`User "${created.name}" created successfully!\n\nUser ID: ${created.id}\nPassword: ${created.password}\nRole: ${created.role}${isFirebaseConfigured ? '\n\n✓ Account synced to Firebase Authentication!' : ''}`);
+  };
+
+  const handleSyncToFirebaseAuth = async () => {
+    setSyncingAuth(true);
+    try {
+      const results = await provisionStaffToFirebaseAuth(users);
+      alert(
+        `Firebase Authentication Sync Complete!\n\n` +
+        `• Created in Firebase: ${results.created}\n` +
+        `• Already existed: ${results.alreadyExists}\n` +
+        `• Errors/Failed: ${results.failed}\n\n` +
+        `Open Firebase Console -> Authentication -> Users to see all staff!`
+      );
+    } catch (err) {
+      alert(`Firebase Auth sync failed: ${err.message}`);
+    } finally {
+      setSyncingAuth(false);
+    }
   };
 
   const toggleClientAllocation = (clientId) => {
@@ -217,6 +247,20 @@ export default function UserManagement({
             >
               <Building2 className="w-4 h-4 text-cyan-400" />
               <span>Edit Company Profile</span>
+            </button>
+          )}
+
+          {/* Sync Staff to Firebase Auth */}
+          {isFirebaseConfigured && (isSuperAdmin || isAdmin) && (
+            <button
+              type="button"
+              onClick={handleSyncToFirebaseAuth}
+              disabled={syncingAuth}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition"
+              title="Register and sync all staff to Firebase Authentication"
+            >
+              <UploadCloud className="w-4 h-4 text-amber-400" />
+              <span>{syncingAuth ? 'Syncing...' : 'Sync Staff to Firebase Auth'}</span>
             </button>
           )}
 

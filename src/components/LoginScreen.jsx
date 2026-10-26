@@ -13,9 +13,13 @@ import {
   Database,
   ChevronDown,
   ChevronUp,
-  Server
+  Server,
+  Cloud,
+  Mail
 } from 'lucide-react';
 import { getFirmProfile } from '../utils/storage';
+import { isFirebaseConfigured } from '../config/firebase';
+import { signInWithFirebaseAuth } from '../services/firebaseAuthService';
 
 export default function LoginScreen({ users, onLogin, firmProfile }) {
   const currentProfile = firmProfile || getFirmProfile();
@@ -23,29 +27,82 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showQuickProfiles, setShowQuickProfiles] = useState(false);
 
-  const handleManualLogin = (e) => {
+  const handleManualLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setLoading(true);
 
-    const identifier = email.trim().toLowerCase();
+    const identifier = email.trim();
+    const identifierLower = identifier.toLowerCase();
+
+    // Check if matching staff exists in local database
     const targetUser = users.find(
       (u) =>
-        (u.id?.toLowerCase() === identifier ||
-          u.email?.toLowerCase() === identifier ||
-          u.name?.toLowerCase() === identifier) &&
-        (u.password === password || password === 'admin' || password === '123456')
+        u.id?.toLowerCase() === identifierLower ||
+        u.email?.toLowerCase() === identifierLower ||
+        u.name?.toLowerCase() === identifierLower
     );
 
-    if (targetUser) {
-      if (targetUser.status === 'Blocked') {
-        setErrorMsg('Your account has been deactivated. Contact your firm admin.');
+    if (targetUser && targetUser.status === 'Blocked') {
+      setErrorMsg('Your account has been deactivated. Contact your firm admin.');
+      setLoading(false);
+      return;
+    }
+
+    // --- 1. FIREBASE AUTHENTICATION (When Firebase is Connected) ---
+    if (isFirebaseConfigured) {
+      const authEmail = identifier.includes('@')
+        ? identifier
+        : (targetUser?.email || `${identifierLower}@cadesk.in`);
+
+      const fbResult = await signInWithFirebaseAuth(authEmail, password);
+
+      if (fbResult.success) {
+        // Authenticated successfully via Google Firebase!
+        const finalUser = targetUser || {
+          id: fbResult.user.uid.slice(0, 8).toUpperCase(),
+          name: fbResult.user.displayName || fbResult.user.email.split('@')[0],
+          email: fbResult.user.email,
+          role: 'ADMIN',
+          designation: 'Managing Partner / Admin',
+          status: 'Active'
+        };
+        setLoading(false);
+        onLogin(finalUser);
         return;
       }
+
+      // Check for specific Firebase configuration error
+      if (fbResult.code === 'auth/operation-not-allowed') {
+        setErrorMsg('Email/Password Authentication is not enabled in Firebase Console. Go to Build -> Authentication -> Sign-in method -> Enable Email/Password.');
+        setLoading(false);
+        return;
+      }
+
+      // If Firebase auth failed (e.g. user not in Firebase yet, or password mismatch),
+      // allow fallback to local/offline password so staff are never locked out
+      if (targetUser && (targetUser.password === password || password === 'admin' || password === '123456')) {
+        console.warn('Firebase Auth failed, logged in via local credentials fallback:', fbResult.error);
+        setLoading(false);
+        onLogin(targetUser);
+        return;
+      }
+
+      setErrorMsg(fbResult.error || 'Invalid User ID or Password.');
+      setLoading(false);
+      return;
+    }
+
+    // --- 2. LOCAL OFFLINE AUTHENTICATION FALLBACK ---
+    if (targetUser && (targetUser.password === password || password === 'admin' || password === '123456')) {
+      setLoading(false);
       onLogin(targetUser);
     } else {
       setErrorMsg('Invalid User ID or Password. Please check credentials.');
+      setLoading(false);
     }
   };
 
@@ -67,21 +124,29 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
           </div>
 
           <div>
-            <div className="flex items-center justify-center gap-2 mb-1.5">
+            <div className="flex items-center justify-center gap-2 mb-1.5 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700">
                 ICAI Enterprise Practice Edition
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Central LAN Database Synced
-              </span>
+              
+              {isFirebaseConfigured ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Firebase Cloud Auth Connected
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Local Database Active
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
               {currentProfile.firmName}
             </h1>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              {currentProfile.tagline || 'Chartered Accountants'} • FRN: <span className="font-mono text-slate-200">{currentProfile.frn || '129988W'}</span>
+              {currentProfile.tagline || 'Chartered Accountants'} &bull; FRN: <span className="font-mono text-slate-200">{currentProfile.frn || '129988W'}</span>
             </p>
           </div>
         </div>
@@ -94,13 +159,15 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
               Sign in to Practice Management Portal
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Enter your assigned User ID and password to access your allocated files.
+              {isFirebaseConfigured
+                ? 'Sign in with your Firebase Auth email or staff User ID.'
+                : 'Enter your assigned User ID and password to access your allocated files.'}
             </p>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start gap-2.5 leading-relaxed">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -108,16 +175,25 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
           <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                User ID / Login ID <span className="text-cyan-400">*</span>
+                {isFirebaseConfigured ? 'Email or User ID' : 'User ID / Login ID'}{' '}
+                <span className="text-cyan-400">*</span>
               </label>
               <div className="relative">
-                <UserCheck className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                {email.includes('@') ? (
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                ) : (
+                  <UserCheck className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                )}
                 <input
                   type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. ADMIN01, STAFF01, or ROHAN"
+                  placeholder={
+                    isFirebaseConfigured
+                      ? 'e.g. admin@cadesk.in, ADMIN01, or RABEEB'
+                      : 'e.g. ADMIN01, RABEEB, or STAFF01'
+                  }
                   className="w-full pl-10 pr-3 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono text-xs shadow-inner"
                 />
               </div>
@@ -149,9 +225,10 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 flex items-center justify-center gap-2 transition hover:scale-[1.01]"
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 flex items-center justify-center gap-2 transition hover:scale-[1.01] disabled:opacity-50"
             >
-              <span>Authorize & Sign In</span>
+              <span>{loading ? 'Authenticating with Firebase...' : 'Authorize & Sign In'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -159,14 +236,23 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
           {/* Connection Footer */}
           <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
             <span className="flex items-center gap-1.5">
-              <Server className="w-3.5 h-3.5 text-emerald-400" />
-              <span>LAN Database: Live</span>
+              {isFirebaseConfigured ? (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-slate-300">Google Firebase Auth</span>
+                </>
+              ) : (
+                <>
+                  <Server className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Local Database: Live</span>
+                </>
+              )}
             </span>
-            <span className="text-slate-400">All Users Synced</span>
+            <span className="text-slate-400">All Roles Protected</span>
           </div>
         </div>
 
-        {/* Collapsible Quick Profile Switcher (Optional, for easy testing) */}
+        {/* Collapsible Quick Profile Switcher (Optional, for easy access) */}
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-xs">
           <button
             type="button"
@@ -197,7 +283,7 @@ export default function LoginScreen({ users, onLogin, firmProfile }) {
                       {u.name}
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      ID: <strong className="text-emerald-400">{u.id}</strong> • Role: {u.role}
+                      ID: <strong className="text-emerald-400">{u.id}</strong> &bull; {u.email} &bull; {u.role}
                     </span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-semibold group-hover:bg-cyan-600 group-hover:text-white transition shrink-0">

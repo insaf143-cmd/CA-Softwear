@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Default Firebase Configuration template or Environment variables
 const getFirebaseConfig = () => {
@@ -26,17 +27,19 @@ export const firebaseConfig = getFirebaseConfig();
 
 let app = null;
 let db = null;
+let auth = null;
 let isFirebaseConfigured = false;
 
 try {
   if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.projectId !== "your-app-id") {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    auth = getAuth(app);
     isFirebaseConfigured = true;
-    console.log("Firebase initialized successfully with Firestore DB.");
+    console.log("Firebase initialized successfully with Firestore DB and Auth.");
   }
 } catch (error) {
   console.warn("Firebase initialization skipped (missing credentials):", error.message);
 }
 
-export { app, db, isFirebaseConfigured };
+export { app, db, auth, isFirebaseConfigured };
