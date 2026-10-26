@@ -16,10 +16,11 @@ import {
   Paperclip,
   Download,
   ExternalLink,
-  File
+  File,
+  Trash2
 } from 'lucide-react';
 
-export default function WorkDetailsModal({ work, onClose }) {
+export default function WorkDetailsModal({ work, onClose, onDeleteTask, isManagerOrAdmin }) {
   if (!work) return null;
 
   const isCompleted = work.status === 'Completed';
@@ -263,8 +264,24 @@ export default function WorkDetailsModal({ work, onClose }) {
           </div>
         )}
 
-        {/* Close Button */}
-        <div className="pt-3 flex justify-end border-t border-slate-800">
+        {/* Footer Actions */}
+        <div className="pt-3 flex items-center justify-between border-t border-slate-800">
+          <div>
+            {isManagerOrAdmin && onDeleteTask && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDeleteTask(work.id, work.title);
+                }}
+                className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/30 font-bold text-xs flex items-center gap-1.5 transition"
+                title="Delete this task permanently"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>Delete Task</span>
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs"

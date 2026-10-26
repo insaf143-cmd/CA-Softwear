@@ -19,14 +19,19 @@ import {
   AlertTriangle,
   History,
   Kanban,
-  Table as TableIcon
+  Table as TableIcon,
+  Trash2,
+  CheckSquare2,
+  Square,
+  ShieldAlert
 } from 'lucide-react';
 
 import WorkAllocationModal from './WorkAllocationModal';
 import WorkSubmitModal from './WorkSubmitModal';
 import WorkApprovalModal from './WorkApprovalModal';
 import WorkDetailsModal from './WorkDetailsModal';
-import { saveSingleTaskToFirebase } from '../services/firebaseService';
+import { saveSingleTaskToFirebase, deleteSingleTaskFromFirebase } from '../services/firebaseService';
+import { isFirebaseConfigured } from '../config/firebase';
 
 export default function TaskManager({
   tasks,
@@ -39,7 +44,8 @@ export default function TaskManager({
   const [statusFilter, setStatusFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [serviceLineFilter, setServiceLineFilter] = useState('All');
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table' | 'deletionTable'
+  const [selectedTaskIdsForDelete, setSelectedTaskIdsForDelete] = useState([]);
 
   // Modal States
   const [showAllocateModal, setShowAllocateModal] = useState(false);
@@ -52,6 +58,84 @@ export default function TaskManager({
     currentUser.role === 'SUPER_ADMIN' ||
     currentUser.role === 'ADMIN' ||
     currentUser.role === 'MANAGER';
+
+  // Task Deletion Handler (Admin & Manager Only with Auto-Update to Firebase)
+  const handleDeleteTask = async (taskId, taskTitle) => {
+    if (!isManagerOrAdmin) {
+      alert('Access Denied: Only Admin and Manager are authorized to delete allocated work.');
+      return;
+    }
+
+    const target = tasks.find((t) => t.id === taskId);
+    const title = taskTitle || target?.title || taskId;
+    const job = target?.jobNumber ? `Job #${target.jobNumber}` : taskId;
+
+    if (
+      !window.confirm(
+        `⚠️ PERMANENTLY DELETE ALLOCATED WORK?\n\nAssignment: "${title}"\nID: ${job}\nClient: ${target?.clientName || 'N/A'}\n\nThis will remove the assignment from all users and automatically delete it from:\n✓ Local Database\n✓ Central LAN Database\n✓ Google Firebase Cloud Database\n\nProceed with deletion?`
+      )
+    ) {
+      return;
+    }
+
+    // 1. Remove from React state & local storage
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setSelectedTaskIdsForDelete((prev) => prev.filter((id) => id !== taskId));
+
+    // 2. Automatically delete from Firebase Firestore
+    if (isFirebaseConfigured) {
+      try {
+        await deleteSingleTaskFromFirebase(taskId);
+        console.log(`[Firebase AutoSync] Task ${taskId} successfully deleted from cloud.`);
+      } catch (err) {
+        console.warn(`[Firebase AutoSync] Error deleting task ${taskId}:`, err);
+      }
+    }
+  };
+
+  // Bulk Deletion Handler (Admin & Manager Only)
+  const handleBulkDelete = async () => {
+    if (!isManagerOrAdmin) {
+      alert('Access Denied: Only Admin and Manager can delete tasks.');
+      return;
+    }
+    if (selectedTaskIdsForDelete.length === 0) {
+      alert('Please select at least 1 task to delete.');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `⚠️ BULK DELETE ${selectedTaskIdsForDelete.length} ALLOCATED WORKS?\n\nAre you sure you want to permanently delete these ${selectedTaskIdsForDelete.length} assignments?\n\nAll selected tasks will be removed locally and automatically wiped from Google Firebase Cloud Database.`
+      )
+    ) {
+      return;
+    }
+
+    const idsToDelete = [...selectedTaskIdsForDelete];
+    setTasks((prev) => prev.filter((t) => !idsToDelete.includes(t.id)));
+    setSelectedTaskIdsForDelete([]);
+
+    if (isFirebaseConfigured) {
+      for (const id of idsToDelete) {
+        deleteSingleTaskFromFirebase(id).catch(console.warn);
+      }
+    }
+  };
+
+  const handleToggleSelectTask = (taskId) => {
+    setSelectedTaskIdsForDelete((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    if (selectedTaskIdsForDelete.length === filteredTasks.length) {
+      setSelectedTaskIdsForDelete([]);
+    } else {
+      setSelectedTaskIdsForDelete(filteredTasks.map((t) => t.id));
+    }
+  };
 
   // 1. Filter tasks: Regular users ONLY see their allocated work
   const userVisibleTasks = isNormalUser
@@ -351,22 +435,36 @@ export default function TaskManager({
           <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === 'kanban' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`p-1.5 rounded-lg transition text-xs font-semibold flex items-center gap-1.5 ${
+                viewMode === 'kanban' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
               title="Kanban Board View"
             >
               <Kanban className="w-4 h-4" />
+              <span className="hidden sm:inline">Board</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === 'table' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`p-1.5 rounded-lg transition text-xs font-semibold flex items-center gap-1.5 ${
+                viewMode === 'table' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
               title="Detailed Table View"
             >
               <TableIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Table</span>
             </button>
+            {isManagerOrAdmin && (
+              <button
+                onClick={() => setViewMode('deletionTable')}
+                className={`p-1.5 rounded-lg transition text-xs font-semibold flex items-center gap-1.5 ${
+                  viewMode === 'deletionTable' ? 'bg-red-600 text-white shadow' : 'text-red-400 hover:bg-red-500/10'
+                }`}
+                title="Task Deletion Table (Admin & Manager Only)"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+                <span className="hidden sm:inline">Deletion Tab</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -427,13 +525,27 @@ export default function TaskManager({
                       >
                         {/* Job Number & Service Line Pill */}
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-mono text-[10px] font-bold text-cyan-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/80">
-                            {t.jobNumber ? `${t.jobNumber}` : t.id}
-                          </span>
-                          {t.serviceLine && (
-                            <span className="text-[9px] font-semibold text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[120px]">
-                              {t.serviceLine}
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-mono text-[10px] font-bold text-cyan-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/80">
+                              {t.jobNumber ? `${t.jobNumber}` : t.id}
                             </span>
+                            {t.serviceLine && (
+                              <span className="text-[9px] font-semibold text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[100px]">
+                                {t.serviceLine}
+                              </span>
+                            )}
+                          </div>
+                          {isManagerOrAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(t.id, t.title);
+                              }}
+                              className="text-slate-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition shrink-0"
+                              title="Delete Task (Admin & Manager Only)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
 
@@ -588,7 +700,7 @@ export default function TaskManager({
             );
           })}
         </div>
-      ) : (
+      ) : viewMode === 'table' ? (
         /* DETAILED TABLE VIEW */
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
@@ -684,12 +796,177 @@ export default function TaskManager({
                             <CheckCheck className="w-3 h-3" /> Review
                           </button>
                         )}
+                        {isManagerOrAdmin && (
+                          <button
+                            onClick={() => handleDeleteTask(t.id, t.title)}
+                            className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/30 font-bold text-[11px] flex items-center gap-1 transition"
+                            title="Delete Allocated Work (Admin & Manager Only)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      ) : (
+        /* DEDICATED DELETION TABLE VIEW (ADMIN & MANAGER ONLY) */
+        <div className="space-y-4">
+          {/* Header & Bulk Actions Banner */}
+          <div className="p-4 rounded-2xl bg-red-950/30 border border-red-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-red-300 flex items-center gap-2">
+                  Allocated Work Deletion & Purge Console
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 font-bold">
+                    Admin & Manager Authority
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Deletions made here will permanently remove assignments from all staff views and automatically synchronize with Google Firebase Cloud Database and Central LAN.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition"
+              >
+                {selectedTaskIdsForDelete.length === filteredTasks.length && filteredTasks.length > 0
+                  ? 'Deselect All'
+                  : `Select All (${filteredTasks.length})`}
+              </button>
+
+              <button
+                type="button"
+                disabled={selectedTaskIdsForDelete.length === 0}
+                onClick={handleBulkDelete}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedTaskIdsForDelete.length})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Deletion Table */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-800/80 text-[11px] uppercase font-bold text-slate-400 border-b border-slate-700">
+                  <tr>
+                    <th className="p-3.5 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedTaskIdsForDelete.length > 0 && selectedTaskIdsForDelete.length === filteredTasks.length}
+                        onChange={handleSelectAllFiltered}
+                        className="rounded border-slate-700 text-red-500 focus:ring-red-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-3.5">Work Assignment & Job ID</th>
+                    <th className="p-3.5">Client & PAN</th>
+                    <th className="p-3.5">Department</th>
+                    <th className="p-3.5">Assigned Staff</th>
+                    <th className="p-3.5">Target Due Date</th>
+                    <th className="p-3.5">Current Status</th>
+                    <th className="p-3.5 text-right">Delete Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {filteredTasks.map((t) => {
+                    const isSelected = selectedTaskIdsForDelete.includes(t.id);
+                    return (
+                      <tr
+                        key={t.id}
+                        className={`transition ${isSelected ? 'bg-red-500/10' : 'hover:bg-slate-800/40'}`}
+                      >
+                        <td className="p-3.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelectTask(t.id)}
+                            className="rounded border-slate-700 text-red-500 focus:ring-red-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-mono text-[10px] font-bold text-cyan-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                              {t.jobNumber ? `Job #${t.jobNumber}` : t.id}
+                            </span>
+                            {t.serviceLine && (
+                              <span className="text-[10px] text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 font-medium">
+                                {t.serviceLine}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-bold text-slate-100">{t.title}</div>
+                          <div className="font-mono text-[10px] text-slate-400">{t.statutorySection || t.category}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="font-semibold text-slate-200">{t.clientName}</div>
+                          <div className="font-mono text-[10px] text-emerald-400">{t.clientPan || 'N/A'}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-800 text-cyan-300 border border-slate-700">
+                            {t.department}
+                          </span>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="font-medium text-slate-200">{t.assignedToName || t.assignedTo}</div>
+                          <div className="text-[10px] text-slate-500">Allocated by: {t.allocatedBy || 'Admin'}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="font-mono font-bold text-amber-300">{t.finishingDate || t.dueDate}</div>
+                          <div className="text-[10px] text-slate-500">Priority: {t.priority}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <span
+                            className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
+                              t.status === 'Completed'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : t.status === 'Submitted for Approval' || t.status === 'Review'
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : t.status === 'In Progress'
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTask(t.id, t.title)}
+                            className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white font-bold text-xs border border-red-500/40 transition flex items-center gap-1.5 ml-auto shadow-sm"
+                            title="Permanently Delete (Auto-updates Firebase)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Work</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredTasks.length === 0 && (
+              <div className="p-12 text-center text-slate-500 text-xs">
+                No allocated works match the current filter or search criteria.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -729,6 +1006,8 @@ export default function TaskManager({
         <WorkDetailsModal
           work={inspectingWork}
           onClose={() => setInspectingWork(null)}
+          onDeleteTask={handleDeleteTask}
+          isManagerOrAdmin={isManagerOrAdmin}
         />
       )}
     </div>

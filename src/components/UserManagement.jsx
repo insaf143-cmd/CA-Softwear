@@ -86,6 +86,8 @@ export default function UserManagement({
   const [newPasswordVal, setNewPasswordVal] = useState('');
   const [showPass, setShowPass] = useState({});
   const [syncingAuth, setSyncingAuth] = useState(false);
+  const [clearingFresh, setClearingFresh] = useState(false);
+  const [clearingStep, setClearingStep] = useState('');
 
   // Tab Access Control State
   const [editingUserTabs, setEditingUserTabs] = useState(null);
@@ -306,20 +308,38 @@ export default function UserManagement({
           {/* Start Fresh Button */}
           {isSuperAdmin && (
             <button
-              onClick={() => {
+              disabled={clearingFresh}
+              onClick={async () => {
                 if (
-                  window.confirm(
-                    '⚠️ ARE YOU SURE?\n\nThis will clear all dummy clients, dummy tasks, and sample users, giving you a 100% FRESH START with a clean database.\n\nYou will keep 1 Master Admin account:\nUser ID: ADMIN01\nPassword: admin\n\nProceed to launch fresh?'
+                  !window.confirm(
+                    '⚠️ ARE YOU SURE YOU WANT A 100% FRESH START?\n\nThis will completely purge all dummy clients, dummy tasks, and sample users.\n\n✓ Local browser cache will be wiped clean\n✓ Central Server LAN database will be wiped clean\n✓ Google Firebase Cloud database will be wiped clean\n\nYou will keep 1 Master Admin account:\nUser ID: ADMIN01\nPassword: admin\n\nProceed to launch fresh?'
                   )
                 ) {
-                  clearAllDataAndStartFresh();
+                  return;
+                }
+                setClearingFresh(true);
+                setClearingStep('Initiating database wipe...');
+                try {
+                  await clearAllDataAndStartFresh((msg) => setClearingStep(msg));
+                } catch (err) {
+                  alert('Error during fresh launch: ' + err.message);
+                  setClearingFresh(false);
                 }
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold transition"
-              title="Wipe demo data and start 100% clean"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold transition disabled:opacity-50"
+              title="Wipe demo data across local, central server, and Firebase"
             >
-              <Trash2 className="w-4 h-4 text-red-400" />
-              <span>Launch Fresh (Clear All Data)</span>
+              {clearingFresh ? (
+                <>
+                  <RefreshCw className="w-4 h-4 text-red-400 animate-spin" />
+                  <span>{clearingStep || 'Wiping All Data...'}</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  <span>Launch Fresh (Clear All Data)</span>
+                </>
+              )}
             </button>
           )}
 

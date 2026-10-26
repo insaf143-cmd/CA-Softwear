@@ -9,6 +9,8 @@ import {
   INITIAL_REMOVED_CLIENTS,
   INITIAL_INWARD_OUTWARD
 } from '../data/mockData';
+import { saveCentralDatabase } from '../services/apiService';
+import { clearAllFirebaseData } from '../services/firebaseService';
 
 const KEYS = {
   CLIENTS: 'digica_clients',
@@ -26,8 +28,13 @@ const KEYS = {
 
 const getItem = (key, initialValue) => {
   try {
+    const isFresh = localStorage.getItem('taxbay_fresh_initialized') === 'true';
     const saved = localStorage.getItem(key);
     if (!saved) {
+      if (isFresh) {
+        if (key === KEYS.USERS) return [INITIAL_USERS[0]];
+        return [];
+      }
       localStorage.setItem(key, JSON.stringify(initialValue));
       return initialValue;
     }
@@ -64,11 +71,6 @@ export const saveROCWork = (data) => setItem(KEYS.ROC, data);
 export const getTasks = () => {
   const tasks = getItem(KEYS.TASKS, INITIAL_TASKS);
   if (!tasks) return [];
-  // Migrate only if legacy tasks exist without department field
-  if (tasks.length > 0 && !tasks[0].department) {
-    saveTasks(INITIAL_TASKS);
-    return INITIAL_TASKS;
-  }
   return tasks;
 };
 export const saveTasks = (data) => setItem(KEYS.TASKS, data);
@@ -141,7 +143,7 @@ export const saveIsLoggedIn = (val) => {
   localStorage.setItem('digica_logged_in', JSON.stringify(val));
 };
 
-export const clearAllDataAndStartFresh = () => {
+export const clearAllDataAndStartFresh = async (onProgress) => {
   const masterAdmin = {
     id: 'ADMIN01',
     name: 'Admin User',
@@ -151,9 +153,25 @@ export const clearAllDataAndStartFresh = () => {
     status: 'Active',
     designation: 'Managing Partner / Admin',
     mobile: '+91 99999 00000',
-    allocatedClientIds: []
+    allocatedClientIds: [],
+    allowedTabs: [
+      'dashboard',
+      'tasks',
+      'reports',
+      'evidence',
+      'inwardOutward',
+      'clients',
+      'gst',
+      'it',
+      'roc',
+      'billing',
+      'calendar',
+      'users'
+    ]
   };
 
+  if (onProgress) onProgress('1/3: Clearing local browser cache...');
+  localStorage.setItem('taxbay_fresh_initialized', 'true');
   localStorage.setItem(KEYS.CLIENTS, JSON.stringify([]));
   localStorage.setItem(KEYS.REMOVED_CLIENTS, JSON.stringify([]));
   localStorage.setItem(KEYS.GST, JSON.stringify([]));
@@ -166,7 +184,40 @@ export const clearAllDataAndStartFresh = () => {
   localStorage.setItem(KEYS.USERS, JSON.stringify([masterAdmin]));
   localStorage.removeItem(KEYS.CURRENT_USER);
   localStorage.setItem('digica_logged_in', JSON.stringify(false));
-  window.location.reload();
+  try {
+    sessionStorage.removeItem('taxbay_session_active');
+  } catch {}
+
+  if (onProgress) onProgress('2/3: Resetting Central Server LAN Database...');
+  try {
+    await saveCentralDatabase({
+      isFresh: true,
+      users: [masterAdmin],
+      clients: [],
+      removedClients: [],
+      gstWork: [],
+      itWork: [],
+      rocWork: [],
+      tasks: [],
+      invoices: [],
+      evidenceDocuments: [],
+      inwardOutwardRecords: []
+    });
+  } catch (err) {
+    console.warn('Central database wipe warning:', err);
+  }
+
+  if (onProgress) onProgress('3/3: Purging Firebase Cloud Collections...');
+  try {
+    await clearAllFirebaseData(masterAdmin);
+  } catch (err) {
+    console.warn('Firebase cloud purge warning:', err);
+  }
+
+  if (onProgress) onProgress('Complete! Reloading with 100% clean database...');
+  setTimeout(() => {
+    window.location.reload();
+  }, 400);
 };
 
 export const DEFAULT_FIRM_PROFILE = {

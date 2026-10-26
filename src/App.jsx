@@ -298,45 +298,105 @@ export default function App() {
       const res = await fetchCentralDatabase();
       if (res && res.success && res.data && isMounted) {
         const db = res.data;
-        if (db.users && db.users.length > 0) {
-          setUsersState((prev) => {
-            const merged = mergeListsById(prev, db.users);
-            saveUsers(merged);
-            return merged;
-          });
+        const isFresh = localStorage.getItem('taxbay_fresh_initialized') === 'true';
+
+        if (db.users && Array.isArray(db.users)) {
+          if (db.users.length > 0) {
+            setUsersState((prev) => {
+              const merged = mergeListsById(prev, db.users);
+              saveUsers(merged);
+              return merged;
+            });
+          }
         }
-        if (db.clients && db.clients.length > 0) {
-          setClientsState((prev) => {
-            const merged = mergeListsById(prev, db.clients);
-            saveClients(merged);
-            return merged;
-          });
+
+        if (Array.isArray(db.clients)) {
+          if (isFresh && db.clients.length === 0) {
+            setClientsState([]);
+            saveClients([]);
+          } else if (db.clients.length > 0) {
+            setClientsState((prev) => {
+              const merged = mergeListsById(prev, db.clients);
+              saveClients(merged);
+              return merged;
+            });
+          }
         }
-        if (db.tasks && db.tasks.length > 0) {
-          setTasksState((prev) => {
-            const merged = mergeListsById(prev, db.tasks);
-            saveTasks(merged);
-            return merged;
-          });
+
+        if (Array.isArray(db.tasks)) {
+          if (isFresh && db.tasks.length === 0) {
+            setTasksState([]);
+            saveTasks([]);
+          } else if (db.tasks.length > 0) {
+            setTasksState((prev) => {
+              const merged = mergeListsById(prev, db.tasks);
+              saveTasks(merged);
+              return merged;
+            });
+          }
         }
-        if (db.inwardOutwardRecords && db.inwardOutwardRecords.length > 0) {
-          setInwardOutwardRecordsState((prev) => {
-            const merged = mergeListsById(prev, db.inwardOutwardRecords);
-            saveInwardOutwardRecords(merged);
-            return merged;
-          });
+
+        if (Array.isArray(db.inwardOutwardRecords)) {
+          if (isFresh && db.inwardOutwardRecords.length === 0) {
+            setInwardOutwardRecordsState([]);
+            saveInwardOutwardRecords([]);
+          } else if (db.inwardOutwardRecords.length > 0) {
+            setInwardOutwardRecordsState((prev) => {
+              const merged = mergeListsById(prev, db.inwardOutwardRecords);
+              saveInwardOutwardRecords(merged);
+              return merged;
+            });
+          }
         }
-        if (db.invoices) setInvoicesState((prev) => mergeListsById(prev, db.invoices));
-        if (db.gstWork) setGstWorkState((prev) => mergeListsById(prev, db.gstWork));
-        if (db.itWork) setItWorkState((prev) => mergeListsById(prev, db.itWork));
-        if (db.rocWork) setRocWorkState((prev) => mergeListsById(prev, db.rocWork));
+
+        if (Array.isArray(db.invoices)) {
+          if (isFresh && db.invoices.length === 0) {
+            setInvoicesState([]);
+            saveInvoices([]);
+          } else if (db.invoices.length > 0) {
+            setInvoicesState((prev) => mergeListsById(prev, db.invoices));
+          }
+        }
+
+        if (Array.isArray(db.gstWork)) {
+          if (isFresh && db.gstWork.length === 0) {
+            setGstWorkState([]);
+            saveGSTWork([]);
+          } else if (db.gstWork.length > 0) {
+            setGstWorkState((prev) => mergeListsById(prev, db.gstWork));
+          }
+        }
+
+        if (Array.isArray(db.itWork)) {
+          if (isFresh && db.itWork.length === 0) {
+            setItWorkState([]);
+            saveITWork([]);
+          } else if (db.itWork.length > 0) {
+            setItWorkState((prev) => mergeListsById(prev, db.itWork));
+          }
+        }
+
+        if (Array.isArray(db.rocWork)) {
+          if (isFresh && db.rocWork.length === 0) {
+            setRocWorkState([]);
+            saveROCWork([]);
+          } else if (db.rocWork.length > 0) {
+            setRocWorkState((prev) => mergeListsById(prev, db.rocWork));
+          }
+        }
+
         if (db.firmProfile && db.firmProfile.firmName) {
           setFirmProfileState(db.firmProfile);
           saveFirmProfile(db.firmProfile);
         }
         if (db.evidenceDocuments) {
-          setEvidenceDocumentsState(db.evidenceDocuments);
-          saveEvidenceDocuments(db.evidenceDocuments);
+          if (isFresh && db.evidenceDocuments.length === 0) {
+            setEvidenceDocumentsState([]);
+            saveEvidenceDocuments([]);
+          } else {
+            setEvidenceDocumentsState(db.evidenceDocuments);
+            saveEvidenceDocuments(db.evidenceDocuments);
+          }
         }
         lastSyncedAtRef.current = res.updatedAt || Date.now();
       }
@@ -374,73 +434,124 @@ export default function App() {
 
   // Subscribe to Firebase Firestore if connected (Merge-Never-Wipe)
   useEffect(() => {
+    const isFreshInit = () => localStorage.getItem('taxbay_fresh_initialized') === 'true';
+
     const unsubClients = subscribeToClientsFromFirebase((cloudClients) => {
-      if (cloudClients && cloudClients.length > 0) {
-        setClientsState((localClients) => {
-          const merged = mergeListsById(localClients, cloudClients);
-          saveClients(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudClients)) {
+        if (cloudClients.length === 0 && isFreshInit()) {
+          setClientsState([]);
+          saveClients([]);
+          return;
+        }
+        if (cloudClients.length > 0) {
+          setClientsState((localClients) => {
+            const merged = mergeListsById(localClients, cloudClients);
+            saveClients(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubTasks = subscribeToTasksFromFirebase((cloudTasks) => {
-      if (cloudTasks && cloudTasks.length > 0) {
-        setTasksState((localTasks) => {
-          const merged = mergeListsById(localTasks, cloudTasks);
-          saveTasks(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudTasks)) {
+        if (cloudTasks.length === 0 && isFreshInit()) {
+          setTasksState([]);
+          saveTasks([]);
+          return;
+        }
+        if (cloudTasks.length > 0) {
+          setTasksState((localTasks) => {
+            const merged = mergeListsById(localTasks, cloudTasks);
+            saveTasks(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubInward = subscribeToInwardOutwardFromFirebase((cloudInward) => {
-      if (cloudInward && cloudInward.length > 0) {
-        setInwardOutwardRecordsState((localInward) => {
-          const merged = mergeListsById(localInward, cloudInward);
-          saveInwardOutwardRecords(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudInward)) {
+        if (cloudInward.length === 0 && isFreshInit()) {
+          setInwardOutwardRecordsState([]);
+          saveInwardOutwardRecords([]);
+          return;
+        }
+        if (cloudInward.length > 0) {
+          setInwardOutwardRecordsState((localInward) => {
+            const merged = mergeListsById(localInward, cloudInward);
+            saveInwardOutwardRecords(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubGST = subscribeToGSTWorkFromFirebase((cloudGST) => {
-      if (cloudGST && cloudGST.length > 0) {
-        setGstWorkState((local) => {
-          const merged = mergeListsById(local, cloudGST);
-          saveGSTWork(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudGST)) {
+        if (cloudGST.length === 0 && isFreshInit()) {
+          setGstWorkState([]);
+          saveGSTWork([]);
+          return;
+        }
+        if (cloudGST.length > 0) {
+          setGstWorkState((local) => {
+            const merged = mergeListsById(local, cloudGST);
+            saveGSTWork(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubIT = subscribeToITWorkFromFirebase((cloudIT) => {
-      if (cloudIT && cloudIT.length > 0) {
-        setItWorkState((local) => {
-          const merged = mergeListsById(local, cloudIT);
-          saveITWork(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudIT)) {
+        if (cloudIT.length === 0 && isFreshInit()) {
+          setItWorkState([]);
+          saveITWork([]);
+          return;
+        }
+        if (cloudIT.length > 0) {
+          setItWorkState((local) => {
+            const merged = mergeListsById(local, cloudIT);
+            saveITWork(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubROC = subscribeToROCWorkFromFirebase((cloudROC) => {
-      if (cloudROC && cloudROC.length > 0) {
-        setRocWorkState((local) => {
-          const merged = mergeListsById(local, cloudROC);
-          saveROCWork(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudROC)) {
+        if (cloudROC.length === 0 && isFreshInit()) {
+          setRocWorkState([]);
+          saveROCWork([]);
+          return;
+        }
+        if (cloudROC.length > 0) {
+          setRocWorkState((local) => {
+            const merged = mergeListsById(local, cloudROC);
+            saveROCWork(merged);
+            return merged;
+          });
+        }
       }
     });
 
     const unsubInvoices = subscribeToInvoicesFromFirebase((cloudInvoices) => {
-      if (cloudInvoices && cloudInvoices.length > 0) {
-        setInvoicesState((local) => {
-          const merged = mergeListsById(local, cloudInvoices);
-          saveInvoices(merged);
-          return merged;
-        });
+      if (Array.isArray(cloudInvoices)) {
+        if (cloudInvoices.length === 0 && isFreshInit()) {
+          setInvoicesState([]);
+          saveInvoices([]);
+          return;
+        }
+        if (cloudInvoices.length > 0) {
+          setInvoicesState((local) => {
+            const merged = mergeListsById(local, cloudInvoices);
+            saveInvoices(merged);
+            return merged;
+          });
+        }
       }
     });
 
