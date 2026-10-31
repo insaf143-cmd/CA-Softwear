@@ -87,6 +87,9 @@ export default function InwardOutwardRegister({
     dispatchedBy: currentUser?.name || 'Authorized Staff',
     receivedByClient: '',
     clientPhone: '',
+    returnType: 'Full', // 'Full' | 'Partial'
+    returnQuantity: '',
+    balanceOnHand: '0',
     acknowledgmentRemarks: 'Materials verified and handed over in intact condition'
   });
 
@@ -110,6 +113,7 @@ export default function InwardOutwardRegister({
       r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.rackLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.handedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.balanceOnHand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.outwardDetails?.outwardId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.outwardDetails?.receivedByClient?.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -123,7 +127,9 @@ export default function InwardOutwardRegister({
       activeTab === 'all'
         ? true
         : activeTab === 'inward'
-        ? r.status === 'In Custody' || r.status === 'Under Audit'
+        ? r.status === 'In Custody' || r.status === 'Under Audit' || r.status === 'Partially Returned'
+        : activeTab === 'partial'
+        ? r.status === 'Partially Returned'
         : r.status === 'Returned';
 
     return matchesSearch && matchesStatus && matchesCategory && matchesTab;
@@ -133,7 +139,9 @@ export default function InwardOutwardRegister({
   const totalCount = records.length;
   const inCustodyCount = records.filter((r) => r.status === 'In Custody').length;
   const underAuditCount = records.filter((r) => r.status === 'Under Audit').length;
+  const partialCount = records.filter((r) => r.status === 'Partially Returned').length;
   const returnedCount = records.filter((r) => r.status === 'Returned').length;
+  const activeOnHandCount = inCustodyCount + underAuditCount + partialCount;
 
   // Handle Client Selection in Inward Modal
   const handleClientChange = (clientId) => {
@@ -180,6 +188,8 @@ export default function InwardOutwardRegister({
       description: cleanDesc,
       type: 'Inward',
       status: 'In Custody',
+      balanceOnHand: inwardForm.quantity || '1 File / Bundle',
+      dispatchHistory: [],
       outwardDetails: null
     };
 
@@ -208,7 +218,7 @@ export default function InwardOutwardRegister({
     });
   };
 
-  // Submit Outward / Return Entry
+  // Submit Outward / Return Entry (Full or Partial Return)
   const handleSaveOutward = (e) => {
     e.preventDefault();
     if (!outwardingRecord) return;
@@ -218,14 +228,45 @@ export default function InwardOutwardRegister({
       return;
     }
 
+    const isPartial = outwardForm.returnType === 'Partial';
+    if (isPartial && (!outwardForm.returnQuantity?.trim() || !outwardForm.balanceOnHand?.trim())) {
+      alert('Please enter both the Quantity Returning Now and the Balance Remaining On Hand.');
+      return;
+    }
+
+    const newStatus = isPartial ? 'Partially Returned' : 'Returned';
+    const newBalanceOnHand = isPartial 
+      ? outwardForm.balanceOnHand.trim() 
+      : '0 (All Returned)';
+
+    const newDispatchEntry = {
+      outwardId: outwardForm.outwardId,
+      date: outwardForm.date,
+      time: outwardForm.time,
+      mode: outwardForm.mode,
+      courierDetails: outwardForm.courierDetails,
+      dispatchedBy: outwardForm.dispatchedBy,
+      receivedByClient: outwardForm.receivedByClient,
+      clientPhone: outwardForm.clientPhone,
+      returnType: outwardForm.returnType,
+      returnQuantity: isPartial ? outwardForm.returnQuantity : (outwardingRecord.balanceOnHand || outwardingRecord.quantity),
+      balanceOnHand: newBalanceOnHand,
+      acknowledgmentRemarks: outwardForm.acknowledgmentRemarks
+    };
+
     const updated = records.map((r) => {
       if (r.id === outwardingRecord.id) {
+        const history = Array.isArray(r.dispatchHistory) ? r.dispatchHistory : [];
         return {
           ...r,
-          status: 'Returned',
+          status: newStatus,
+          balanceOnHand: newBalanceOnHand,
           outwardDetails: {
-            ...outwardForm
-          }
+            ...outwardForm,
+            returnQuantity: isPartial ? outwardForm.returnQuantity : (r.balanceOnHand || r.quantity),
+            balanceOnHand: newBalanceOnHand
+          },
+          dispatchHistory: [newDispatchEntry, ...history]
         };
       }
       return r;
@@ -238,8 +279,12 @@ export default function InwardOutwardRegister({
     }
     setOutwardingRecord(null);
 
+    const msg = isPartial
+      ? `Partial return logged! Returned: ${outwardForm.returnQuantity}. Balance on hand: ${newBalanceOnHand}. Would you like to print the Outward Delivery Challan?`
+      : 'Material returned successfully! Would you like to print the Outward Delivery Challan?';
+
     // Prompt to print delivery challan
-    if (window.confirm('Material returned successfully! Would you like to print the Outward Delivery Challan?')) {
+    if (window.confirm(msg)) {
       handleOpenPrint(completedRecord, 'outward');
     }
   };
@@ -247,6 +292,7 @@ export default function InwardOutwardRegister({
   // Open Outward Modal
   const handleOpenOutwardModal = (record) => {
     setOutwardingRecord(record);
+    const currentOnHand = record.balanceOnHand || record.quantity || '1 File / Bundle';
     setOutwardForm({
       outwardId: generateOutwardId(),
       date: new Date().toISOString().split('T')[0],
@@ -256,6 +302,9 @@ export default function InwardOutwardRegister({
       dispatchedBy: currentUser?.name || 'Authorized Staff',
       receivedByClient: record.handedBy || record.clientName,
       clientPhone: record.handedByPhone || '',
+      returnType: 'Full',
+      returnQuantity: currentOnHand,
+      balanceOnHand: '0',
       acknowledgmentRemarks: 'Materials inspected, verified and handed back safely'
     });
   };
@@ -393,31 +442,31 @@ export default function InwardOutwardRegister({
         <div
           onClick={() => {
             setActiveTab('inward');
-            setStatusFilter('In Custody');
+            setStatusFilter('All');
           }}
           className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 hover:border-amber-500/60 cursor-pointer transition"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-300">In Office Custody</span>
+            <span className="text-xs font-semibold text-amber-300">Active Balance On Hand</span>
             <FolderInput className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-black text-amber-400 mt-1.5">{inCustodyCount}</div>
-          <div className="text-[11px] text-amber-400/80 mt-0.5">Stored in firm racks/safe</div>
+          <div className="text-2xl font-black text-amber-400 mt-1.5">{activeOnHandCount}</div>
+          <div className="text-[11px] text-amber-400/80 mt-0.5">Stored in firm custody/audit</div>
         </div>
 
         <div
           onClick={() => {
-            setActiveTab('inward');
-            setStatusFilter('Under Audit');
+            setActiveTab('partial');
+            setStatusFilter('Partially Returned');
           }}
-          className="p-4 rounded-2xl bg-blue-950/20 border border-blue-500/30 hover:border-blue-500/60 cursor-pointer transition"
+          className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 hover:border-purple-500/60 cursor-pointer transition"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-300">Under Active Audit</span>
-            <FileCheck className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-semibold text-purple-300">Partially Returned</span>
+            <ArrowRightLeft className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-black text-blue-400 mt-1.5">{underAuditCount}</div>
-          <div className="text-[11px] text-blue-400/80 mt-0.5">With staff for verification</div>
+          <div className="text-2xl font-black text-purple-400 mt-1.5">{partialCount}</div>
+          <div className="text-[11px] text-purple-400/80 mt-0.5">Partial balance on hand</div>
         </div>
 
         <div
@@ -428,11 +477,11 @@ export default function InwardOutwardRegister({
           className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 hover:border-emerald-500/60 cursor-pointer transition"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-300">Returned to Client</span>
+            <span className="text-xs font-semibold text-emerald-300">Fully Returned</span>
             <FolderOutput className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black text-emerald-400 mt-1.5">{returnedCount}</div>
-          <div className="text-[11px] text-emerald-500 mt-0.5">Dispatched with acknowledgment</div>
+          <div className="text-[11px] text-emerald-500 mt-0.5">Nil remaining on hand</div>
         </div>
       </div>
 
@@ -440,7 +489,7 @@ export default function InwardOutwardRegister({
       <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Main Navigation Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 flex-wrap">
             <button
               onClick={() => {
                 setActiveTab('all');
@@ -466,7 +515,21 @@ export default function InwardOutwardRegister({
               }`}
             >
               <FolderInput className="w-3.5 h-3.5 text-amber-400" />
-              <span>Inward / In Custody ({inCustodyCount + underAuditCount})</span>
+              <span>On Hand in Custody ({activeOnHandCount})</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('partial');
+                setStatusFilter('Partially Returned');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                activeTab === 'partial'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5 text-purple-400" />
+              <span>Partial Returns ({partialCount})</span>
             </button>
             <button
               onClick={() => {
@@ -480,7 +543,7 @@ export default function InwardOutwardRegister({
               }`}
             >
               <FolderOutput className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Outward / Dispatched ({returnedCount})</span>
+              <span>Fully Returned ({returnedCount})</span>
             </button>
           </div>
 
@@ -526,7 +589,8 @@ export default function InwardOutwardRegister({
               <option value="All">All Statuses</option>
               <option value="In Custody">In Custody</option>
               <option value="Under Audit">Under Audit</option>
-              <option value="Returned">Returned to Client</option>
+              <option value="Partially Returned">Partially Returned (Balance On Hand)</option>
+              <option value="Returned">Fully Returned to Client</option>
             </select>
           </div>
 
@@ -610,9 +674,23 @@ export default function InwardOutwardRegister({
                       {/* Description & Qty */}
                       <td className="py-3 px-4 align-top max-w-xs">
                         <p className="text-slate-200 line-clamp-2">{r.description}</p>
-                        <div className="text-[10px] text-amber-400/90 font-mono font-medium mt-1">
-                          Qty: {r.quantity}
+                        <div className="text-[10px] text-slate-400 font-mono mt-1">
+                          Inward Qty: <strong className="text-slate-300">{r.quantity}</strong>
                         </div>
+                        {/* Balance On Hand Badge */}
+                        {r.status === 'Partially Returned' ? (
+                          <div className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            <span>Balance On Hand: {r.balanceOnHand}</span>
+                          </div>
+                        ) : isReturned ? (
+                          <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
+                            Balance On Hand: Nil (All Returned)
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 text-[10px] text-emerald-400 font-mono font-bold">
+                            Balance On Hand: {r.balanceOnHand || r.quantity}
+                          </div>
+                        )}
                         {r.remarks && (
                           <div className="text-[10px] text-slate-500 italic mt-0.5">
                             Note: {r.remarks}
@@ -626,12 +704,17 @@ export default function InwardOutwardRegister({
                           <MapPin className="w-3 h-3 text-red-400 shrink-0" />
                           <span className="font-medium text-[11px]">{r.rackLocation}</span>
                         </div>
-                        {isReturned && (
+                        {isReturned ? (
                           <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Vacated (Returned)</span>
                           </div>
-                        )}
+                        ) : r.status === 'Partially Returned' ? (
+                          <div className="text-[10px] text-amber-400 mt-1 flex items-center gap-1">
+                            <ArrowRightLeft className="w-3 h-3" />
+                            <span>Partial In Custody</span>
+                          </div>
+                        ) : null}
                       </td>
 
                       {/* Received By / Handed By */}
@@ -651,13 +734,17 @@ export default function InwardOutwardRegister({
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                             isReturned
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : r.status === 'Partially Returned'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                               : isUnderAudit
                               ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 animate-pulse'
-                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                           }`}
                         >
                           {isReturned ? (
                             <CheckCircle2 className="w-3 h-3" />
+                          ) : r.status === 'Partially Returned' ? (
+                            <ArrowRightLeft className="w-3 h-3" />
                           ) : isUnderAudit ? (
                             <FileCheck className="w-3 h-3" />
                           ) : (
@@ -666,6 +753,11 @@ export default function InwardOutwardRegister({
                           <span>{r.status}</span>
                         </span>
 
+                        {r.status === 'Partially Returned' && (
+                          <div className="text-[10px] text-amber-400 font-bold mt-1 font-mono">
+                            On Hand: {r.balanceOnHand}
+                          </div>
+                        )}
                         {isReturned && r.outwardDetails && (
                           <div className="text-[10px] text-slate-400 font-mono mt-1">
                             {r.outwardDetails.outwardId} on {r.outwardDetails.date}
@@ -700,11 +792,15 @@ export default function InwardOutwardRegister({
                           {!isReturned ? (
                             <button
                               onClick={() => handleOpenOutwardModal(r)}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[10px] shadow transition"
-                              title="Return / Outward to Client"
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded text-white font-bold text-[10px] shadow transition ${
+                                r.status === 'Partially Returned'
+                                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500'
+                                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
+                              }`}
+                              title={r.status === 'Partially Returned' ? 'Dispatch / Return Remaining Balance' : 'Return / Outward to Client'}
                             >
                               <Send className="w-3 h-3" />
-                              <span>Dispatch</span>
+                              <span>{r.status === 'Partially Returned' ? 'Return More' : 'Dispatch'}</span>
                             </button>
                           ) : (
                             <button
@@ -1026,6 +1122,101 @@ export default function InwardOutwardRegister({
             </div>
 
             <form onSubmit={handleSaveOutward} className="space-y-4">
+              {/* Return Type Choice: Full Return vs Partial Return */}
+              <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                <label className="block text-[11px] font-bold text-slate-300 uppercase">
+                  Return Mode / Scope
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOutwardForm(prev => ({
+                        ...prev,
+                        returnType: 'Full',
+                        returnQuantity: outwardingRecord.balanceOnHand || outwardingRecord.quantity || 'All',
+                        balanceOnHand: '0'
+                      }));
+                    }}
+                    className={`p-3 rounded-xl border text-left transition ${
+                      outwardForm.returnType === 'Full'
+                        ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold text-xs">
+                      <span>Full Return (Complete)</span>
+                      {outwardForm.returnType === 'Full' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      All material handed back to client. Balance on hand becomes zero.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOutwardForm(prev => ({
+                        ...prev,
+                        returnType: 'Partial',
+                        returnQuantity: '',
+                        balanceOnHand: ''
+                      }));
+                    }}
+                    className={`p-3 rounded-xl border text-left transition ${
+                      outwardForm.returnType === 'Partial'
+                        ? 'bg-amber-600/20 border-amber-500 text-white shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold text-xs">
+                      <span>Partial Return</span>
+                      {outwardForm.returnType === 'Partial' && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Client takes back some items; remaining items stay in custody.
+                    </p>
+                  </button>
+                </div>
+
+                {outwardForm.returnType === 'Partial' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-slate-800 animate-fade-in">
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-300 uppercase mb-1">
+                        Quantity Returning Now *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={outwardForm.returnQuantity}
+                        onChange={(e) => setOutwardForm({ ...outwardForm, returnQuantity: e.target.value })}
+                        placeholder="e.g. 2 Files / 5 Books"
+                        className="w-full bg-slate-900 border border-amber-500/60 rounded-xl px-3 py-2 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-cyan-300 uppercase mb-1">
+                        Balance Remaining On Hand in Custody *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={outwardForm.balanceOnHand}
+                        onChange={(e) => setOutwardForm({ ...outwardForm, balanceOnHand: e.target.value })}
+                        placeholder="e.g. 3 Files remaining on hand"
+                        className="w-full bg-slate-900 border border-cyan-500/60 rounded-xl px-3 py-2 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-slate-900 text-[11px] text-slate-400 flex items-center justify-between">
+                    <span>Returning all material on hand: <strong className="text-emerald-400">{outwardingRecord.balanceOnHand || outwardingRecord.quantity}</strong></span>
+                    <span className="font-mono text-emerald-400 font-bold">Balance On Hand &rarr; 0 (Nil)</span>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Outward ID */}
                 <div>

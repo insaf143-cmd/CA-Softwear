@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   ArrowRightLeft,
@@ -14,7 +14,12 @@ import {
   Paperclip,
   Download,
   ExternalLink,
-  File
+  File,
+  Receipt,
+  TrendingUp,
+  FileCheck2,
+  Check,
+  Clock
 } from 'lucide-react';
 
 export default function WorkApprovalModal({
@@ -38,7 +43,7 @@ export default function WorkApprovalModal({
 
   // Approval Form State
   const [approvalRemarks, setApprovalRemarks] = useState(
-    'Reviewed work papers and reconciliations. Found in order and approved for partner sign-off.'
+    'Reviewed work papers, calculations, and reconciliations. Found in order and approved for partner sign-off.'
   );
 
   // Transfer Form State
@@ -49,13 +54,129 @@ export default function WorkApprovalModal({
     new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0]
   );
 
+  // Detect service line / department
+  const initialServiceType = (() => {
+    if (work.submissionDetails?.complianceData?.serviceType) {
+      return work.submissionDetails.complianceData.serviceType;
+    }
+    const text = `${work.serviceLine || ''} ${work.department || ''} ${work.title || ''}`.toLowerCase();
+    if (text.includes('gst') || text.includes('indirect tax')) return 'GST';
+    if (text.includes('income tax') || text.includes('itr') || text.includes('direct tax') || text.includes('3cd') || text.includes('tds')) return 'IT';
+    if (text.includes('roc') || text.includes('mca') || text.includes('corporate') || text.includes('aoc') || text.includes('mgt')) return 'ROC';
+    return 'None';
+  })();
+
+  const [selectedService, setSelectedService] = useState(initialServiceType);
+
+  // GST Compliance Data State for Final Approval
+  const subGst = work.submissionDetails?.complianceData?.serviceType === 'GST' ? work.submissionDetails.complianceData : {};
+  const [gstData, setGstData] = useState({
+    type: subGst.type || 'GSTR-3B',
+    period: subGst.period || 'October 2026',
+    dueDate: subGst.dueDate || work.dueDate || work.finishingDate || '2026-11-20',
+    turnover: subGst.turnover ?? '',
+    salesTax: subGst.salesTax ?? '',
+    itcAvailable: subGst.itcAvailable ?? '',
+    netLiability: subGst.netLiability ?? '',
+    arn: subGst.arn || '',
+    status: 'Filed' // Default to Filed upon manager sign-off
+  });
+
+  // Auto-calculate Net GST Liability when Sales Tax or ITC changes
+  useEffect(() => {
+    if (gstData.salesTax !== '' || gstData.itcAvailable !== '') {
+      const sales = Number(gstData.salesTax) || 0;
+      const itc = Number(gstData.itcAvailable) || 0;
+      const calculatedNet = Math.max(0, sales - itc);
+      setGstData(prev => ({ ...prev, netLiability: calculatedNet }));
+    }
+  }, [gstData.salesTax, gstData.itcAvailable]);
+
+  // Income Tax Compliance Data State for Final Approval
+  const subIt = work.submissionDetails?.complianceData?.serviceType === 'IT' ? work.submissionDetails.complianceData : {};
+  const [itData, setItData] = useState({
+    formType: subIt.formType || 'ITR-3',
+    ay: subIt.ay || 'AY 2026-27',
+    dueDate: subIt.dueDate || work.dueDate || work.finishingDate || '2026-10-31',
+    taxableIncome: subIt.taxableIncome ?? '',
+    taxDue: subIt.taxDue ?? '',
+    ackNo: subIt.ackNo || '',
+    taxAuditRequired: subIt.taxAuditRequired ?? false,
+    status: 'Filed' // Default to Filed upon manager sign-off
+  });
+
+  // ROC & MCA Compliance Data State for Final Approval
+  const subRoc = work.submissionDetails?.complianceData?.serviceType === 'ROC' ? work.submissionDetails.complianceData : {};
+  const [rocData, setRocData] = useState({
+    formName: subRoc.formName || 'AOC-4',
+    category: subRoc.category || 'Annual ROC Filing',
+    dueDate: subRoc.dueDate || work.dueDate || work.finishingDate || '2026-10-30',
+    srn: subRoc.srn || '',
+    notes: subRoc.notes || '',
+    status: 'Completed' // Default to Completed upon manager sign-off
+  });
+
   const handleApprove = (e) => {
     e.preventDefault();
+
+    let complianceData = null;
+    if (selectedService === 'GST') {
+      complianceData = {
+        serviceType: 'GST',
+        clientId: work.clientId,
+        clientName: work.clientName,
+        gstin: work.clientGstin || 'N/A',
+        type: gstData.type,
+        period: gstData.period,
+        dueDate: gstData.dueDate,
+        turnover: Number(gstData.turnover) || 0,
+        salesTax: Number(gstData.salesTax) || 0,
+        itcAvailable: Number(gstData.itcAvailable) || 0,
+        netLiability: Number(gstData.netLiability) || 0,
+        arn: gstData.arn.trim(),
+        status: gstData.status,
+        taskId: work.id
+      };
+    } else if (selectedService === 'IT') {
+      complianceData = {
+        serviceType: 'IT',
+        clientId: work.clientId,
+        clientName: work.clientName,
+        pan: work.clientPan || 'N/A',
+        formType: itData.formType,
+        ay: itData.ay,
+        dueDate: itData.dueDate,
+        taxableIncome: Number(itData.taxableIncome) || 0,
+        taxDue: Number(itData.taxDue) || 0,
+        ackNo: itData.ackNo.trim(),
+        taxAuditRequired: itData.taxAuditRequired,
+        assignedTo: work.assignedToName || currentUser.name,
+        status: itData.status,
+        taskId: work.id
+      };
+    } else if (selectedService === 'ROC') {
+      complianceData = {
+        serviceType: 'ROC',
+        clientId: work.clientId,
+        clientName: work.clientName,
+        formName: rocData.formName,
+        category: rocData.category,
+        dueDate: rocData.dueDate,
+        assignedTo: work.assignedToName || currentUser.name,
+        srn: rocData.srn.trim(),
+        notes: rocData.notes.trim() || approvalRemarks.trim(),
+        status: rocData.status,
+        taskId: work.id
+      };
+    }
+
     const approvalData = {
       approvedAt: new Date().toISOString().split('T')[0],
       approvedBy: `${currentUser.name} (${currentUser.role})`,
-      approvalRemarks: approvalRemarks.trim()
+      approvalRemarks: approvalRemarks.trim(),
+      complianceData
     };
+
     onApproveWork(work.id, approvalData);
     onClose();
   };
@@ -103,7 +224,7 @@ export default function WorkApprovalModal({
                 Manager Review & Approval Decision
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Audit submitted work. Approve as Completed OR Transfer to next department for further verification.
+                Audit submitted work, verify compliance figures (Turnover/ITC/Liabilities), and sign off.
               </p>
             </div>
           </div>
@@ -119,6 +240,7 @@ export default function WorkApprovalModal({
               <h4 className="font-bold text-slate-100 text-sm">{work.title}</h4>
               <p className="text-slate-400 text-[11px] mt-0.5">
                 Client: <strong className="text-slate-200">{work.clientName}</strong> • PAN: <span className="font-mono text-emerald-400">{work.clientPan || 'N/A'}</span>
+                {work.clientGstin && <span> • GSTIN: <span className="font-mono text-cyan-400">{work.clientGstin}</span></span>}
               </p>
             </div>
             <span className="text-[10px] px-2.5 py-1 rounded font-bold uppercase bg-blue-500/10 text-blue-300 border border-blue-500/20 shrink-0">
@@ -144,7 +266,7 @@ export default function WorkApprovalModal({
           {/* User Completion Remarks Box */}
           <div className="mt-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-200">
             <span className="font-bold text-purple-300 block mb-1">
-              Article Assistant / User Completion Remarks:
+              Article Assistant / Staff Completion Remarks:
             </span>
             <p className="text-xs leading-relaxed italic">
               "{work.submissionDetails?.completionRemarks || work.notes || 'Work completed per instructions and submitted for sign-off.'}"
@@ -247,24 +369,322 @@ export default function WorkApprovalModal({
         {/* Action Form 1: Approve as Completed */}
         {activeAction === 'approve' && (
           <form onSubmit={handleApprove} className="space-y-4 text-xs animate-fade-in">
+            {/* COMPLIANCE SERVICE SELECTION & FIGURES VERIFICATION */}
+            <div className="space-y-2 p-3.5 rounded-2xl bg-slate-800/50 border border-emerald-500/30">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                  <Receipt className="w-4 h-4 text-emerald-400" />
+                  <span>Verify Compliance Filing Details & Output Report</span>
+                </label>
+                <span className="text-[10px] text-emerald-400 font-medium">Auto-syncs to GST / IT / ROC Registers</span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 pt-1">
+                {[
+                  { id: 'GST', label: 'GST Return' },
+                  { id: 'IT', label: 'Income Tax (ITR)' },
+                  { id: 'ROC', label: 'ROC / MCA' },
+                  { id: 'None', label: 'No Statutory Filing' }
+                ].map((srv) => (
+                  <button
+                    key={srv.id}
+                    type="button"
+                    onClick={() => setSelectedService(srv.id)}
+                    className={`py-2 px-2.5 rounded-xl border text-center transition font-bold text-[11px] ${
+                      selectedService === srv.id
+                        ? 'bg-emerald-600/30 border-emerald-400 text-white shadow-md'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{srv.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* GST FINAL CONFIRMATION */}
+              {selectedService === 'GST' && (
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span className="font-bold text-cyan-300 flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5" /> GST Turnover, ITC & Final Liability
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">GSTIN: {work.clientGstin || 'N/A'}</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Return Type</label>
+                      <select
+                        value={gstData.type}
+                        onChange={(e) => setGstData({ ...gstData, type: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      >
+                        <option value="GSTR-3B">GSTR-3B</option>
+                        <option value="GSTR-1">GSTR-1</option>
+                        <option value="CMP-08">CMP-08</option>
+                        <option value="GSTR-9">GSTR-9</option>
+                        <option value="GSTR-9C">GSTR-9C</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Period</label>
+                      <input
+                        type="text"
+                        value={gstData.period}
+                        onChange={(e) => setGstData({ ...gstData, period: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Due Date</label>
+                      <input
+                        type="date"
+                        value={gstData.dueDate}
+                        onChange={(e) => setGstData({ ...gstData, dueDate: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Turnover (₹)</label>
+                      <input
+                        type="number"
+                        value={gstData.turnover}
+                        onChange={(e) => setGstData({ ...gstData, turnover: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Output Tax (₹)</label>
+                      <input
+                        type="number"
+                        value={gstData.salesTax}
+                        onChange={(e) => setGstData({ ...gstData, salesTax: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">GST Input ITC (₹)</label>
+                      <input
+                        type="number"
+                        value={gstData.itcAvailable}
+                        onChange={(e) => setGstData({ ...gstData, itcAvailable: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-emerald-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-amber-300 text-[10px] font-bold mb-0.5">Net Liability (₹)</label>
+                      <input
+                        type="number"
+                        value={gstData.netLiability}
+                        onChange={(e) => setGstData({ ...gstData, netLiability: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-amber-500/60 rounded-lg text-amber-300 font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">ARN / Ack Number</label>
+                      <input
+                        type="text"
+                        value={gstData.arn}
+                        onChange={(e) => setGstData({ ...gstData, arn: e.target.value })}
+                        placeholder="e.g. AA271026001234V"
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Final Register Status</label>
+                      <select
+                        value={gstData.status}
+                        onChange={(e) => setGstData({ ...gstData, status: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-emerald-500/50 rounded-lg text-emerald-400 font-bold"
+                      >
+                        <option value="Filed">Filed (Signed Off)</option>
+                        <option value="Client Approved">Client Approved</option>
+                        <option value="Draft Prepared">Draft Prepared</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* INCOME TAX FINAL CONFIRMATION */}
+              {selectedService === 'IT' && (
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-blue-500/30 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span className="font-bold text-blue-300 flex items-center gap-1">
+                      <FileCheck2 className="w-3.5 h-3.5" /> Income Tax & ITR Figures
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">PAN: {work.clientPan || 'N/A'}</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Form / Return</label>
+                      <select
+                        value={itData.formType}
+                        onChange={(e) => setItData({ ...itData, formType: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      >
+                        <option value="ITR-1">ITR-1 (Sahaj)</option>
+                        <option value="ITR-2">ITR-2</option>
+                        <option value="ITR-3">ITR-3 (Business)</option>
+                        <option value="ITR-4">ITR-4 (Sugam)</option>
+                        <option value="ITR-5">ITR-5 (LLP/Firm)</option>
+                        <option value="ITR-6">ITR-6 (Company)</option>
+                        <option value="Form 3CD">Form 3CD (Tax Audit)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">AY</label>
+                      <input
+                        type="text"
+                        value={itData.ay}
+                        onChange={(e) => setItData({ ...itData, ay: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Due Date</label>
+                      <input
+                        type="date"
+                        value={itData.dueDate}
+                        onChange={(e) => setItData({ ...itData, dueDate: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Taxable Income (₹)</label>
+                      <input
+                        type="number"
+                        value={itData.taxableIncome}
+                        onChange={(e) => setItData({ ...itData, taxableIncome: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Tax Payable / Refund (₹)</label>
+                      <input
+                        type="number"
+                        value={itData.taxDue}
+                        onChange={(e) => setItData({ ...itData, taxDue: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-emerald-400 font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Ack / Token No</label>
+                      <input
+                        type="text"
+                        value={itData.ackNo}
+                        onChange={(e) => setItData({ ...itData, ackNo: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 text-[11px]">
+                      <input
+                        type="checkbox"
+                        checked={itData.taxAuditRequired}
+                        onChange={(e) => setItData({ ...itData, taxAuditRequired: e.target.checked })}
+                        className="w-3.5 h-3.5 rounded text-blue-600 bg-slate-800 border-slate-700"
+                      />
+                      <span>Tax Audit (44AB)</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400 text-[10px]">Status:</span>
+                      <select
+                        value={itData.status}
+                        onChange={(e) => setItData({ ...itData, status: e.target.value })}
+                        className="px-2 py-1 bg-slate-800 border border-emerald-500/50 rounded-lg text-emerald-400 font-bold"
+                      >
+                        <option value="Filed">Filed (Completed)</option>
+                        <option value="In Audit">In Audit</option>
+                        <option value="Client Approved">Client Approved</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ROC FINAL CONFIRMATION */}
+              {selectedService === 'ROC' && (
+                <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-purple-500/30 space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Form Name</label>
+                      <input
+                        type="text"
+                        value={rocData.formName}
+                        onChange={(e) => setRocData({ ...rocData, formName: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">SRN / Challan</label>
+                      <input
+                        type="text"
+                        value={rocData.srn}
+                        onChange={(e) => setRocData({ ...rocData, srn: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Filing Status</label>
+                      <select
+                        value={rocData.status}
+                        onChange={(e) => setRocData({ ...rocData, status: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-emerald-500/50 rounded-lg text-emerald-400 font-bold"
+                      >
+                        <option value="Completed">Completed / Filed</option>
+                        <option value="In Progress">In Progress</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Remarks */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
                 Manager Approval Sign-Off Remarks <span className="text-emerald-400">*</span>
               </label>
               <textarea
-                rows="3"
+                rows="2"
                 required
                 value={approvalRemarks}
                 onChange={(e) => setApprovalRemarks(e.target.value)}
                 placeholder="Manager audit notes, verification comments, partner authorization..."
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>
-                Work will be marked as <strong>COMPLETED</strong> with approval timestamp ({new Date().toISOString().split('T')[0]}) and recorded in firm performance reports.
+                Work will be marked as <strong>COMPLETED</strong> and figures auto-updated in the corresponding <strong>Compliance Register</strong> for audit review.
               </span>
             </div>
 
@@ -319,17 +739,17 @@ export default function WorkApprovalModal({
                   onChange={(e) => setNextDepartment(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none"
                 >
-                  <option value="Statutory & Tax Audit">Statutory & Tax Audit (3CD)</option>
-                  <option value="Income Tax">Income Tax & Direct Tax</option>
+                  <option value="Statutory & Tax Audit">Statutory & Tax Audit</option>
+                  <option value="Income Tax">Income Tax</option>
                   <option value="GST Compliance">GST Compliance</option>
-                  <option value="ROC & Corporate Laws">ROC & Corporate Laws (MCA)</option>
-                  <option value="TDS & Payroll">TDS & Payroll Withholding</option>
+                  <option value="ROC & Corporate Laws">ROC & Corporate Laws</option>
                   <option value="Accounting & Bookkeeping">Accounting & Bookkeeping</option>
+                  <option value="TDS & Payroll">TDS & Payroll</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Next Assignee Staff</label>
+                <label className="block text-slate-300 font-semibold mb-1">Assign to Staff Member</label>
                 <select
                   value={nextAssignee}
                   onChange={(e) => setNextAssignee(e.target.value)}
@@ -337,14 +757,14 @@ export default function WorkApprovalModal({
                 >
                   {staff.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({s.role === 'NORMAL_USER' ? s.designation : s.role})
+                      {s.name} ({s.designation || s.role})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">New Finishing Date</label>
+                <label className="block text-slate-300 font-semibold mb-1">New Finishing Target</label>
                 <input
                   type="date"
                   required
@@ -365,10 +785,10 @@ export default function WorkApprovalModal({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-amber-500 text-white font-bold shadow-lg shadow-amber-950/50 flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg shadow-amber-950/50 flex items-center gap-2"
               >
                 <ArrowRightLeft className="w-4 h-4" />
-                <span>Transfer to Next Department</span>
+                <span>Confirm Department Transfer</span>
               </button>
             </div>
           </form>

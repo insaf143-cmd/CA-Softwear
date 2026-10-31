@@ -38,7 +38,13 @@ export default function TaskManager({
   setTasks,
   clients,
   staff,
-  currentUser
+  currentUser,
+  gstWork = [],
+  setGstWork,
+  itWork = [],
+  setItWork,
+  rocWork = [],
+  setRocWork
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -210,12 +216,96 @@ export default function TaskManager({
     if (updatedItem) saveSingleTaskToFirebase(updatedItem);
   };
 
+  // Helper to upsert compliance records into GST, IT, or ROC registers
+  const syncComplianceRecord = (workObj, compData, isFinalApproval = false) => {
+    if (!compData || !compData.serviceType) return;
+
+    if (compData.serviceType === 'GST' && setGstWork) {
+      const gstItem = {
+        id: compData.id || `GST-${workObj.clientId || 'CL'}-${workObj.id.replace('CA-WRK-', '')}`,
+        clientId: workObj.clientId || compData.clientId || 'CL01',
+        clientName: workObj.clientName || compData.clientName || 'General Client',
+        gstin: workObj.clientGstin || compData.gstin || 'N/A',
+        type: compData.type || 'GSTR-3B',
+        period: compData.period || 'October 2026',
+        dueDate: compData.dueDate || workObj.dueDate || '2026-11-20',
+        turnover: Number(compData.turnover) || 0,
+        salesTax: Number(compData.salesTax) || 0,
+        itcAvailable: Number(compData.itcAvailable) || 0,
+        netLiability: Number(compData.netLiability) || 0,
+        status: isFinalApproval ? (compData.status || 'Filed') : (compData.status || 'Draft Prepared'),
+        arn: compData.arn || '',
+        taskId: workObj.id
+      };
+      setGstWork((prev = []) => {
+        const idx = prev.findIndex((g) => g.taskId === workObj.id || g.id === gstItem.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], ...gstItem };
+          return copy;
+        }
+        return [gstItem, ...prev];
+      });
+    } else if (compData.serviceType === 'IT' && setItWork) {
+      const itItem = {
+        id: compData.id || `IT-${workObj.clientId || 'CL'}-${workObj.id.replace('CA-WRK-', '')}`,
+        clientId: workObj.clientId || compData.clientId || 'CL01',
+        clientName: workObj.clientName || compData.clientName || 'General Client',
+        pan: workObj.clientPan || compData.pan || 'N/A',
+        formType: compData.formType || 'ITR-3',
+        ay: compData.ay || 'AY 2026-27',
+        dueDate: compData.dueDate || workObj.dueDate || '2026-10-31',
+        taxableIncome: Number(compData.taxableIncome) || 0,
+        taxDue: Number(compData.taxDue) || 0,
+        ackNo: compData.ackNo || (isFinalApproval ? 'ACK-VERIFIED' : 'Pending'),
+        assignedTo: workObj.assignedToName || currentUser.name,
+        status: isFinalApproval ? (compData.status || 'Filed') : (compData.status || 'Draft Prepared'),
+        taxAuditRequired: Boolean(compData.taxAuditRequired),
+        taskId: workObj.id
+      };
+      setItWork((prev = []) => {
+        const idx = prev.findIndex((i) => i.taskId === workObj.id || i.id === itItem.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], ...itItem };
+          return copy;
+        }
+        return [itItem, ...prev];
+      });
+    } else if (compData.serviceType === 'ROC' && setRocWork) {
+      const rocItem = {
+        id: compData.id || `ROC-${workObj.clientId || 'CL'}-${workObj.id.replace('CA-WRK-', '')}`,
+        clientId: workObj.clientId || compData.clientId || 'CL01',
+        clientName: workObj.clientName || compData.clientName || 'General Client',
+        formName: compData.formName || 'AOC-4',
+        category: compData.category || 'Annual ROC Filing',
+        dueDate: compData.dueDate || workObj.dueDate || '2026-10-30',
+        assignedTo: workObj.assignedToName || currentUser.name,
+        notes: compData.notes || workObj.title,
+        status: isFinalApproval ? (compData.status || 'Completed') : (compData.status || 'In Progress'),
+        srn: compData.srn || '',
+        taskId: workObj.id
+      };
+      setRocWork((prev = []) => {
+        const idx = prev.findIndex((r) => r.taskId === workObj.id || r.id === rocItem.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], ...rocItem };
+          return copy;
+        }
+        return [rocItem, ...prev];
+      });
+    }
+  };
+
   // User submits finished work for manager approval
   const handleSubmitWork = (workId, submissionData) => {
     let updatedItem = null;
+    let targetTask = null;
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id === workId) {
+          targetTask = t;
           updatedItem = {
             ...t,
             status: 'Submitted for Approval',
@@ -226,15 +316,22 @@ export default function TaskManager({
         return t;
       })
     );
-    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
+    if (updatedItem) {
+      saveSingleTaskToFirebase(updatedItem);
+      if (submissionData?.complianceData) {
+        syncComplianceRecord(targetTask || updatedItem, submissionData.complianceData, false);
+      }
+    }
   };
 
   // Manager approves work -> marked Completed
   const handleApproveWork = (workId, approvalData) => {
     let updatedItem = null;
+    let targetTask = null;
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id === workId) {
+          targetTask = t;
           updatedItem = {
             ...t,
             status: 'Completed',
@@ -245,7 +342,13 @@ export default function TaskManager({
         return t;
       })
     );
-    if (updatedItem) saveSingleTaskToFirebase(updatedItem);
+    if (updatedItem) {
+      saveSingleTaskToFirebase(updatedItem);
+      const compData = approvalData?.complianceData || updatedItem.submissionDetails?.complianceData;
+      if (compData) {
+        syncComplianceRecord(targetTask || updatedItem, compData, true);
+      }
+    }
   };
 
   // Manager rejects / does not approve -> transfers to next department

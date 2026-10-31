@@ -749,6 +749,12 @@ export default function App() {
               clients={visibleClients}
               staff={users}
               currentUser={currentUser}
+              gstWork={gstWork}
+              setGstWork={setGstWork}
+              itWork={itWork}
+              setItWork={setItWork}
+              rocWork={rocWork}
+              setRocWork={setRocWork}
             />
           )}
 
@@ -815,6 +821,7 @@ export default function App() {
               itWork={visibleItWork}
               setItWork={setItWork}
               onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+              clients={visibleClients}
             />
           )}
 
@@ -822,6 +829,7 @@ export default function App() {
             <ROCAndAuditModule
               rocWork={rocWork}
               setRocWork={setRocWork}
+              clients={visibleClients}
             />
           )}
 
