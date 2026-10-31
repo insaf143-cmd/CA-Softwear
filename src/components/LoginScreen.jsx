@@ -100,12 +100,11 @@ export default function LoginScreen({ users, onLogin, firmProfile, onInstallPwa,
     const cleanInputPassword = password.trim();
     const cleanUserPassword = (targetUser.password || '').trim();
 
-    // Check credentials against firm database
+    // Check credentials strictly against registered credentials in firm database
     const isPasswordMatch =
-      cleanInputPassword === cleanUserPassword ||
-      (targetUser.id === 'ADMIN01' && cleanInputPassword === 'admin') ||
-      (cleanInputPassword === '123' && ['FAZIL', 'INSAF', 'RABEEB'].includes(targetUser.id?.toUpperCase())) ||
-      (cleanInputPassword === 'Pass@5616' && targetUser.id?.toUpperCase() === 'FAZIL');
+      cleanInputPassword.length > 0 &&
+      ((cleanUserPassword.length > 0 && cleanInputPassword === cleanUserPassword) ||
+       (targetUser.id === 'ADMIN01' && !cleanUserPassword && cleanInputPassword === 'admin'));
 
     if (isPasswordMatch) {
       setLoading(false);

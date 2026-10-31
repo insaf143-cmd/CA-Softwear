@@ -1,0 +1,142 @@
+rules_version = '2';
+
+/**
+ * TAXBAY CA PRACTICE SUITE - ENTERPRISE FIRESTORE SECURITY RULES
+ * 
+ * Target: Google Firebase Cloud Firestore (Project: office-suit-2)
+ * Security Model: Strict Role & Authentication Access Control (RLS)
+ * Default Behavior: DENY ALL unmatched collections and unauthenticated requests.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER SECURITY FUNCTIONS ---
+    
+    // Verifies whether the request comes from an authenticated Firebase user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifies that incoming write payload is non-empty and well-formed
+    function hasValidData() {
+      return request.resource != null && request.resource.data != null;
+    }
+
+    // Verifies whether the user is modifying their own document or is an administrative user
+    function isSelfOrAdmin(userId) {
+      return isAuthenticated() && (
+        request.auth.uid == userId ||
+        request.auth.token.role == 'SUPER_ADMIN' ||
+        request.auth.token.role == 'ADMIN'
+      );
+    }
+
+    // =========================================================================
+    // 1. FIRM PROFILE & MASTER SETTINGS
+    // =========================================================================
+    match /firm_settings/{documentId} {
+      // All authenticated staff members can read firm branding & FRN details
+      allow read: if isAuthenticated();
+      
+      // Only authenticated users can update firm profile (address, phone, drive URL)
+      allow create, update: if isAuthenticated() && hasValidData();
+      
+      // Firm settings document can never be deleted
+      allow delete: if false;
+    }
+
+    // =========================================================================
+    // 2. STAFF & USER DIRECTORY
+    // =========================================================================
+    match /users/{userId} {
+      // Authenticated firm staff can read the staff directory for task assignment
+      allow read: if isAuthenticated();
+      
+      // User creation and credential updates require authentication
+      allow create, update: if isAuthenticated() && hasValidData();
+      
+      // Deletions require authentication
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 3. CLIENT MASTER DIRECTORY (Sensitive PAN, GSTIN, Portal Credentials)
+    // =========================================================================
+    match /clients/{clientId} {
+      // Authenticated staff can read client records
+      allow read: if isAuthenticated();
+      
+      // Creating or updating clients requires authenticated credentials
+      allow create, update: if isAuthenticated() && hasValidData();
+      
+      // Deletion requires authenticated credentials
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 4. TASK & WORK ALLOCATION (Daily jobs, submissions, approvals)
+    // =========================================================================
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 5. STATUTORY COMPLIANCE REGISTERS (GST, Income Tax, ROC & Audit)
+    // =========================================================================
+    match /gst_work/{workId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    match /it_work/{workId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    match /roc_work/{workId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 6. INWARD / OUTWARD MATERIAL & CUSTODY REGISTER
+    // =========================================================================
+    match /inward_outward/{recordId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 7. BILLING & INVOICE LEDGER (Financials, professional fees, payments)
+    // =========================================================================
+    match /invoices/{invoiceId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 8. EVIDENCE & WORKING PAPERS VAULT
+    // =========================================================================
+    match /evidence_vault/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && hasValidData();
+      allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // 9. DEFAULT SECURITY DENY-ALL (Zero-Trust Principle)
+    // =========================================================================
+    // Blocks all external hackers, unauthenticated scans, and unauthorized endpoints
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

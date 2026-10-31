@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -64,6 +65,39 @@ import {
   checkDatabaseStatus
 } from './services/apiService';
 
+export const TAB_ROLE_PERMISSIONS = {
+  dashboard: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  tasks: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  reports: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+  evidence: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  inwardOutward: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  clients: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  gst: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  it: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  roc: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+  billing: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+  calendar: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
+  users: ['SUPER_ADMIN', 'ADMIN'],
+  removal: ['SUPER_ADMIN', 'ADMIN']
+};
+
+export const isTabAuthorized = (tabId, user) => {
+  if (!user || !user.role) return false;
+  if (user.role === 'SUPER_ADMIN') return true;
+
+  // 1. Role hierarchy permission check
+  const allowedRoles = TAB_ROLE_PERMISSIONS[tabId] || [];
+  if (!allowedRoles.includes(user.role)) return false;
+
+  // 2. Specific allowedTabs permission check
+  const userAllowedTabs =
+    Array.isArray(user.allowedTabs) && user.allowedTabs.length > 0
+      ? user.allowedTabs
+      : getDefaultTabsForRole(user.role);
+
+  return userAllowedTabs.includes(tabId);
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(getIsLoggedIn);
   const [activeTab, setActiveTab] = useState('tasks');
@@ -105,17 +139,15 @@ export default function App() {
   const [users, setUsersState] = useState(getUsers);
   const [currentUser, setCurrentUserState] = useState(getCurrentUser);
 
-  // Tab Access Guard: Enforce strict allowedTabs permissions per user
+  // Tab Access Guard: Enforce strict role hierarchy and allowedTabs permissions
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !isTabAuthorized(activeTab, currentUser)) {
       const userTabs =
         Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
           ? currentUser.allowedTabs
           : getDefaultTabsForRole(currentUser.role);
-
-      if (!userTabs.includes(activeTab)) {
-        setActiveTab(userTabs[0] || 'tasks');
-      }
+      const fallbackTab = userTabs.find((t) => isTabAuthorized(t, currentUser)) || 'dashboard';
+      setActiveTab(fallbackTab);
     }
   }, [currentUser, activeTab]);
 
@@ -241,7 +273,14 @@ export default function App() {
       return next;
     });
   };
-  const handleSwitchUser = (user) => { setCurrentUserState(user); saveCurrentUser(user); };
+  const handleSwitchUser = (user) => {
+    if (currentUser?.role !== 'SUPER_ADMIN') {
+      alert('Security Policy: Only Super Admin is authorized to switch user accounts.');
+      return;
+    }
+    setCurrentUserState(user);
+    saveCurrentUser(user);
+  };
 
   const handleLogin = (user) => {
     setCurrentUserState(user);
@@ -728,141 +767,164 @@ export default function App() {
 
         {/* Main Content Area */}
         <main ref={mainContentRef} className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full pb-20 md:pb-6">
-          {activeTab === 'dashboard' && (
-            <Dashboard
-              clients={visibleClients}
-              gstWork={visibleGstWork}
-              itWork={visibleItWork}
-              tasks={visibleTasks}
-              invoices={invoices}
-              setActiveTab={setActiveTab}
-              onOpenNewClient={() => setShowNewClientModal(true)}
-              onOpenTaxCalc={() => setShowTaxCalcModal(true)}
-              firmProfile={firmProfile}
-            />
-          )}
+          {!isTabAuthorized(activeTab, currentUser) ? (
+            <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-red-950/20 border border-red-500/30 rounded-2xl text-center max-w-xl mx-auto my-12 backdrop-blur-sm shadow-xl">
+              <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-lg shadow-red-950/40">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <span className="text-xs font-mono uppercase tracking-widest text-red-400 font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 mb-2">
+                Access Control Guard &bull; 403 Forbidden
+              </span>
+              <h2 className="text-xl font-bold text-white mb-2">Access Denied: Restricted Module</h2>
+              <p className="text-slate-400 text-sm max-w-md mb-6">
+                Your account ({currentUser?.name || 'Staff'} &bull; {currentUser?.role || 'Restricted'}) is not authorized to access the <strong className="text-amber-400 font-mono uppercase">{activeTab}</strong> module. Please contact your Firm Administrator.
+              </p>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-blue-900/30 cursor-pointer"
+              >
+                Return to Safe Dashboard
+              </button>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'dashboard' && (
+                <Dashboard
+                  clients={visibleClients}
+                  gstWork={visibleGstWork}
+                  itWork={visibleItWork}
+                  tasks={visibleTasks}
+                  invoices={invoices}
+                  setActiveTab={setActiveTab}
+                  onOpenNewClient={() => setShowNewClientModal(true)}
+                  onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+                  firmProfile={firmProfile}
+                />
+              )}
 
-          {activeTab === 'tasks' && (
-            <TaskManager
-              tasks={tasks}
-              setTasks={setTasks}
-              clients={visibleClients}
-              staff={users}
-              currentUser={currentUser}
-              gstWork={gstWork}
-              setGstWork={setGstWork}
-              itWork={itWork}
-              setItWork={setItWork}
-              rocWork={rocWork}
-              setRocWork={setRocWork}
-            />
-          )}
+              {activeTab === 'tasks' && (
+                <TaskManager
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  clients={visibleClients}
+                  staff={users}
+                  currentUser={currentUser}
+                  gstWork={gstWork}
+                  setGstWork={setGstWork}
+                  itWork={itWork}
+                  setItWork={setItWork}
+                  rocWork={rocWork}
+                  setRocWork={setRocWork}
+                />
+              )}
 
-          {activeTab === 'reports' && (
-            <ReportsModule
-              users={users}
-              tasks={tasks}
-              setTasks={setTasks}
-              gstWork={gstWork}
-              itWork={itWork}
-              rocWork={rocWork}
-              clients={clients}
-              currentUser={currentUser}
-              firmProfile={firmProfile}
-            />
-          )}
+              {activeTab === 'reports' && (
+                <ReportsModule
+                  users={users}
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  gstWork={gstWork}
+                  itWork={itWork}
+                  rocWork={rocWork}
+                  clients={clients}
+                  currentUser={currentUser}
+                  firmProfile={firmProfile}
+                />
+              )}
 
-          {activeTab === 'evidence' && (
-            <EvidenceVault
-              evidenceDocuments={evidenceDocuments}
-              setEvidenceDocuments={setEvidenceDocuments}
-              clients={visibleClients}
-              tasks={tasks}
-              currentUser={currentUser}
-              firmProfile={firmProfile}
-              onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
-            />
-          )}
+              {activeTab === 'evidence' && (
+                <EvidenceVault
+                  evidenceDocuments={evidenceDocuments}
+                  setEvidenceDocuments={setEvidenceDocuments}
+                  clients={visibleClients}
+                  tasks={tasks}
+                  currentUser={currentUser}
+                  firmProfile={firmProfile}
+                  onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
+                />
+              )}
 
-          {activeTab === 'inwardOutward' && (
-            <InwardOutwardRegister
-              records={inwardOutwardRecords}
-              setRecords={setInwardOutwardRecords}
-              clients={visibleClients}
-              staff={users}
-              currentUser={currentUser}
-              firmProfile={firmProfile}
-            />
-          )}
+              {activeTab === 'inwardOutward' && (
+                <InwardOutwardRegister
+                  records={inwardOutwardRecords}
+                  setRecords={setInwardOutwardRecords}
+                  clients={visibleClients}
+                  staff={users}
+                  currentUser={currentUser}
+                  firmProfile={firmProfile}
+                />
+              )}
 
-          {activeTab === 'clients' && (
-            <ClientManagement
-              clients={visibleClients}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              onOpenClientDetail={(client) => setSelectedClientDetail(client)}
-              onOpenNewClient={() => setShowNewClientModal(true)}
-              onDeleteClient={handleRemoveClient}
-              currentUser={currentUser}
-            />
-          )}
+              {activeTab === 'clients' && (
+                <ClientManagement
+                  clients={visibleClients}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  onOpenClientDetail={(client) => setSelectedClientDetail(client)}
+                  onOpenNewClient={() => setShowNewClientModal(true)}
+                  onDeleteClient={handleRemoveClient}
+                  currentUser={currentUser}
+                />
+              )}
 
-          {activeTab === 'gst' && (
-            <GSTModule
-              gstWork={visibleGstWork}
-              setGstWork={setGstWork}
-              clients={visibleClients}
-              firmProfile={firmProfile}
-            />
-          )}
+              {activeTab === 'gst' && (
+                <GSTModule
+                  gstWork={visibleGstWork}
+                  setGstWork={setGstWork}
+                  clients={visibleClients}
+                  firmProfile={firmProfile}
+                />
+              )}
 
-          {activeTab === 'it' && (
-            <ITModule
-              itWork={visibleItWork}
-              setItWork={setItWork}
-              onOpenTaxCalc={() => setShowTaxCalcModal(true)}
-              clients={visibleClients}
-            />
-          )}
+              {activeTab === 'it' && (
+                <ITModule
+                  itWork={visibleItWork}
+                  setItWork={setItWork}
+                  onOpenTaxCalc={() => setShowTaxCalcModal(true)}
+                  clients={visibleClients}
+                />
+              )}
 
-          {activeTab === 'roc' && (
-            <ROCAndAuditModule
-              rocWork={rocWork}
-              setRocWork={setRocWork}
-              clients={visibleClients}
-            />
-          )}
+              {activeTab === 'roc' && (
+                <ROCAndAuditModule
+                  rocWork={rocWork}
+                  setRocWork={setRocWork}
+                  clients={visibleClients}
+                />
+              )}
 
-          {activeTab === 'billing' && (
-            <BillingModule
-              invoices={invoices}
-              setInvoices={setInvoices}
-              clients={visibleClients}
-              firmProfile={firmProfile}
-            />
-          )}
+              {activeTab === 'billing' && (
+                <BillingModule
+                  invoices={invoices}
+                  setInvoices={setInvoices}
+                  clients={visibleClients}
+                  firmProfile={firmProfile}
+                />
+              )}
 
-          {activeTab === 'calendar' && (
-            <ComplianceCalendar />
-          )}
+              {activeTab === 'calendar' && (
+                <ComplianceCalendar />
+              )}
 
-          {activeTab === 'users' && (
-            <UserManagement
-              users={users}
-              setUsers={setUsers}
-              currentUser={currentUser}
-              clients={clients}
-              onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
-            />
-          )}
+              {activeTab === 'users' && (
+                <UserManagement
+                  users={users}
+                  setUsers={setUsers}
+                  currentUser={currentUser}
+                  clients={clients}
+                  onOpenFirmSettings={() => setShowFirmSettingsModal(true)}
+                />
+              )}
 
-          {activeTab === 'removal' && (
-            <ClientRemovalTab
-              removedClients={removedClients}
-              onRestoreClient={handleRestoreClient}
-              onPermanentDeleteClient={handlePermanentDeleteClient}
-              currentUser={currentUser}
-            />
+              {activeTab === 'removal' && (
+                <ClientRemovalTab
+                  removedClients={removedClients}
+                  onRestoreClient={handleRestoreClient}
+                  onPermanentDeleteClient={handlePermanentDeleteClient}
+                  currentUser={currentUser}
+                />
+              )}
+            </>
           )}
         </main>
       </div>
@@ -889,7 +951,7 @@ export default function App() {
         />
       )}
 
-      {showFirebaseModal && (
+      {showFirebaseModal && currentUser?.role === 'SUPER_ADMIN' && (
         <FirebaseConfigModal
           onClose={() => setShowFirebaseModal(false)}
           currentData={{
@@ -907,13 +969,13 @@ export default function App() {
         />
       )}
 
-      {showGitHubModal && (
+      {showGitHubModal && (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN') && (
         <GitHubSyncModal
           onClose={() => setShowGitHubModal(false)}
         />
       )}
 
-      {showFirmSettingsModal && (
+      {showFirmSettingsModal && (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN') && (
         <FirmSettingsModal
           firmProfile={firmProfile}
           onSaveFirmProfile={setFirmProfile}

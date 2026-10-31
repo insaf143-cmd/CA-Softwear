@@ -143,13 +143,24 @@ function centralDatabasePlugin() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), centralDatabasePlugin()],
-  server: {
-    host: '0.0.0.0',
-    port: 5173
-  },
-  css: {
-    postcss: false
-  }
+export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production';
+
+  return {
+    plugins: [react(), tailwindcss(), centralDatabasePlugin()],
+    server: {
+      host: '0.0.0.0',
+      port: 5173
+    },
+    oxc: {
+      drop: isProd ? ['console', 'debugger'] : []
+    },
+    build: {
+      sourcemap: false,
+      minify: true
+    },
+    css: {
+      postcss: false
+    }
+  };
 });

@@ -77,8 +77,26 @@ export default function UserManagement({
     allowedTabs: getDefaultTabsForRole('NORMAL_USER')
   });
 
-  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-  const isAdmin = currentUser.role === 'ADMIN';
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Hard Access Control Guard: Non-administrators are strictly blocked from rendering User Management
+  if (!isSuperAdmin && !isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-red-950/20 border border-red-500/30 rounded-2xl text-center max-w-xl mx-auto my-12 backdrop-blur-sm shadow-xl">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-lg shadow-red-950/40">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <span className="text-xs font-mono uppercase tracking-widest text-red-400 font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 mb-2">
+          Security Guard &bull; 403 Forbidden
+        </span>
+        <h2 className="text-xl font-bold text-white mb-2">Access Denied: Staff & Role Control</h2>
+        <p className="text-slate-400 text-sm max-w-md">
+          Administrative privileges are required to view credentials, manage user roles, and adjust permissions. This unauthorized attempt has been restricted.
+        </p>
+      </div>
+    );
+  }
 
   const toggleShowPass = (userId) => {
     setShowPass((prev) => ({ ...prev, [userId]: !prev[userId] }));
@@ -115,6 +133,15 @@ export default function UserManagement({
     const target = users.find((u) => u.id === userId);
     if (!target) return;
 
+    if (target.role === 'SUPER_ADMIN' && !isSuperAdmin) {
+      alert('Security Policy: Only a Super Admin can delete a Super Admin account!');
+      return;
+    }
+    if (target.role === 'ADMIN' && !isSuperAdmin) {
+      alert('Security Policy: Only a Super Admin can delete an Admin account!');
+      return;
+    }
+
     if (
       !window.confirm(
         `⚠️ PERMANENTLY DELETE USER ACCOUNT?\n\nUser Name: "${target.name}"\nLogin ID: ${userId}\nRole: ${target.role}\n\nThis will completely delete this user from:\n✓ Local Staff Directory\n✓ Central LAN Database\n✓ Google Firebase Cloud Database\n\nThe deleted user will be permanently blocked from logging in.`
@@ -145,6 +172,13 @@ export default function UserManagement({
 
   const handleResetPassword = (e) => {
     e.preventDefault();
+    if (!editingUserPass) return;
+
+    if (editingUserPass.role === 'SUPER_ADMIN' && !isSuperAdmin) {
+      alert('Security Policy: Only a Super Admin can reset the password of a Super Admin account!');
+      return;
+    }
+
     if (!newPasswordVal.trim()) return;
 
     const updatedUser = { ...editingUserPass, password: newPasswordVal.trim() };
@@ -160,6 +194,11 @@ export default function UserManagement({
 
   const handleCreateUser = (e) => {
     e.preventDefault();
+
+    if (newUser.role === 'SUPER_ADMIN' && !isSuperAdmin) {
+      alert('Security Policy: Only existing Super Admins can create a Super Admin account.');
+      return;
+    }
 
     const cleanId = newUser.id.trim().toUpperCase();
     if (!cleanId) {
@@ -228,6 +267,11 @@ export default function UserManagement({
   const handleSaveUserTabs = (e) => {
     e.preventDefault();
     if (!editingUserTabs) return;
+
+    if (editingUserTabs.role === 'SUPER_ADMIN' && !isSuperAdmin) {
+      alert('Security Policy: Only Super Admin can adjust Super Admin module permissions.');
+      return;
+    }
 
     if (selectedTabsForEdit.length === 0) {
       alert('Please select at least 1 module tab for this user!');
