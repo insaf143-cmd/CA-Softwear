@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileText,
   X,
@@ -52,11 +53,19 @@ export default function WorkDetailsModal({ work, onClose, onDeleteTask, isManage
     document.body.removeChild(link);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 md:p-8 space-y-6 shadow-2xl my-8">
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-start justify-between p-5 md:p-6 border-b border-slate-800 shrink-0 bg-slate-900/95">
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-mono text-xs text-cyan-400 font-bold bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
@@ -93,6 +102,7 @@ export default function WorkDetailsModal({ work, onClose, onDeleteTask, isManage
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-6">
         {/* Lifecycle Stepper */}
         <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
           <div className="flex items-center justify-between text-[11px] font-bold">
@@ -289,7 +299,10 @@ export default function WorkDetailsModal({ work, onClose, onDeleteTask, isManage
             Close Window
           </button>
         </div>
+        </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }
