@@ -121,6 +121,21 @@ export const addDeletedUserId = (userId) => {
   }
 };
 
+export const normalizeUserTabs = (u) => {
+  if (!u || !u.role) return u;
+  if (u.role === 'SUPER_ADMIN') {
+    return { ...u, allowedTabs: getDefaultTabsForRole('SUPER_ADMIN') };
+  }
+  let tabs =
+    Array.isArray(u.allowedTabs) && u.allowedTabs.length > 0
+      ? [...u.allowedTabs]
+      : getDefaultTabsForRole(u.role);
+  if (['ADMIN', 'MANAGER'].includes(u.role) && !tabs.includes('hr')) {
+    tabs.push('hr');
+  }
+  return { ...u, allowedTabs: tabs };
+};
+
 export const getUsers = () => {
   const users = getItem(KEYS.USERS, INITIAL_USERS);
   if (!users || users.length === 0) return [INITIAL_USERS[0]];
@@ -128,12 +143,7 @@ export const getUsers = () => {
 
   return users
     .filter((u) => u && u.id && !deleted.includes(u.id.toUpperCase()))
-    .map((u) => ({
-      ...u,
-      allowedTabs: Array.isArray(u.allowedTabs) && u.allowedTabs.length > 0
-        ? u.allowedTabs
-        : getDefaultTabsForRole(u.role)
-    }));
+    .map(normalizeUserTabs);
 };
 export const saveUsers = (data) => setItem(KEYS.USERS, data);
 
@@ -148,12 +158,7 @@ export const getCurrentUser = () => {
     const deleted = getDeletedUserIds();
     if (deleted.includes(user.id.toUpperCase())) return null;
 
-    return {
-      ...user,
-      allowedTabs: Array.isArray(user.allowedTabs) && user.allowedTabs.length > 0
-        ? user.allowedTabs
-        : getDefaultTabsForRole(user.role)
-    };
+    return normalizeUserTabs(user);
   } catch {
     return null;
   }

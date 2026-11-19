@@ -92,10 +92,14 @@ export const isTabAuthorized = (tabId, user) => {
   if (!allowedRoles.includes(user.role)) return false;
 
   // 2. Specific allowedTabs permission check
-  const userAllowedTabs =
+  let userAllowedTabs =
     Array.isArray(user.allowedTabs) && user.allowedTabs.length > 0
       ? user.allowedTabs
       : getDefaultTabsForRole(user.role);
+
+  if (['ADMIN', 'MANAGER'].includes(user.role) && !userAllowedTabs.includes('hr')) {
+    userAllowedTabs = [...userAllowedTabs, 'hr'];
+  }
 
   return userAllowedTabs.includes(tabId);
 };
@@ -712,10 +716,14 @@ export default function App() {
     { id: 'hr', label: 'HR', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] }
   ].filter((t) => {
     if (!t.roles.includes(currentUser.role)) return false;
-    const userTabs =
+    if (currentUser.role === 'SUPER_ADMIN') return true;
+    let userTabs =
       Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
         ? currentUser.allowedTabs
         : getDefaultTabsForRole(currentUser.role);
+    if (['ADMIN', 'MANAGER'].includes(currentUser.role) && !userTabs.includes('hr')) {
+      userTabs = [...userTabs, 'hr'];
+    }
     return userTabs.includes(t.id);
   });
 

@@ -136,7 +136,7 @@ export default function TaskManager({
       t.department || '',
       t.serviceLine || '',
       t.assignedToName || t.assignedTo || 'Unassigned',
-      t.allocationDate || '',
+      t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || '',
       t.dueDate || t.finishingDate || '',
       t.priority || 'Normal',
       t.status || 'Allocated',
@@ -846,15 +846,22 @@ export default function TaskManager({
                           </span>
                         </div>
 
-                        {/* Client Info & Finishing Date */}
-                        <div className="pt-2 border-t border-slate-700/50 flex items-center justify-between text-[11px]">
-                          <span className="text-slate-300 font-semibold truncate max-w-[110px]" title={t.clientName}>
-                            {t.clientName}
-                          </span>
-                          <span className="text-amber-300 flex items-center gap-1 font-mono text-[10px] font-bold">
-                            <Calendar className="w-3 h-3 text-amber-400" />
-                            {t.finishingDate || t.dueDate}
-                          </span>
+                        {/* Client Info & Dates */}
+                        <div className="pt-2 border-t border-slate-700/50 space-y-1 text-[11px]">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-300 font-semibold truncate max-w-[130px]" title={t.clientName}>
+                              {t.clientName}
+                            </span>
+                            <span className="text-slate-400 font-mono text-[10px]">
+                              Alloc: <span className="text-slate-200 font-semibold">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}</span>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-end">
+                            <span className="text-amber-300 flex items-center gap-1 font-mono text-[10px] font-bold">
+                              <Calendar className="w-3 h-3 text-amber-400" />
+                              Due: {t.finishingDate || t.dueDate}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Assignee */}
@@ -980,7 +987,7 @@ export default function TaskManager({
                   <th className="p-3.5">Client & PAN</th>
                   <th className="p-3.5">Department</th>
                   <th className="p-3.5">Assigned Staff</th>
-                  <th className="p-3.5">Target Finishing Date</th>
+                  <th className="p-3.5">Allocation & Target Date</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5 text-right">Workflow Actions</th>
                 </tr>
@@ -1017,9 +1024,10 @@ export default function TaskManager({
                       <div className="font-medium text-slate-200">{t.assignedToName || t.assignedTo}</div>
                       <div className="text-[10px] text-slate-500">Allocated by: {t.allocatedBy || 'Admin'}</div>
                     </td>
-                    <td className="p-3.5">
-                      <div className="font-mono font-bold text-amber-300">{t.finishingDate || t.dueDate}</div>
-                      <div className="text-[10px] text-slate-500">Priority: {t.priority}</div>
+                    <td className="p-3.5 font-mono text-[11px]">
+                      <div className="text-slate-400">Alloc: <span className="text-slate-200">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}</span></div>
+                      <div className="font-bold text-amber-300">Due: {t.finishingDate || t.dueDate}</div>
+                      <div className="text-[10px] text-slate-500 font-sans">Priority: {t.priority}</div>
                     </td>
                     <td className="p-3.5">
                       <span
@@ -1146,7 +1154,7 @@ export default function TaskManager({
                     <th className="p-3.5">Client & PAN</th>
                     <th className="p-3.5">Department</th>
                     <th className="p-3.5">Assigned Staff</th>
-                    <th className="p-3.5">Target Due Date</th>
+                    <th className="p-3.5">Allocation & Due Date</th>
                     <th className="p-3.5">Current Status</th>
                     <th className="p-3.5 text-right">Delete Action</th>
                   </tr>
@@ -1194,9 +1202,10 @@ export default function TaskManager({
                           <div className="font-medium text-slate-200">{t.assignedToName || t.assignedTo}</div>
                           <div className="text-[10px] text-slate-500">Allocated by: {t.allocatedBy || 'Admin'}</div>
                         </td>
-                        <td className="p-3.5">
-                          <div className="font-mono font-bold text-amber-300">{t.finishingDate || t.dueDate}</div>
-                          <div className="text-[10px] text-slate-500">Priority: {t.priority}</div>
+                        <td className="p-3.5 font-mono text-[11px]">
+                          <div className="text-slate-400">Alloc: <span className="text-slate-200">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}</span></div>
+                          <div className="font-bold text-amber-300">Due: {t.finishingDate || t.dueDate}</div>
+                          <div className="text-[10px] text-slate-500 font-sans">Priority: {t.priority}</div>
                         </td>
                         <td className="p-3.5">
                           <span

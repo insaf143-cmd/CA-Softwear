@@ -143,18 +143,29 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser, 
   ];
 
   // Tab Access Control:
-  // Strict tab permissions: User can ONLY view tabs that are in their allowedTabs list
-  const userAllowedTabs =
+  const isAdminOrManager = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER';
+
+  // Strict tab permissions: Automatically ensure newly added modules like 'hr' are unlocked for authorized roles
+  let userAllowedTabs =
     Array.isArray(currentUser.allowedTabs) && currentUser.allowedTabs.length > 0
-      ? currentUser.allowedTabs
+      ? [...currentUser.allowedTabs]
       : getDefaultTabsForRole(currentUser.role);
+
+  if (isSuperAdmin) {
+    userAllowedTabs = getDefaultTabsForRole('SUPER_ADMIN');
+  } else if (isAdminOrManager && !userAllowedTabs.includes('hr')) {
+    userAllowedTabs.push('hr');
+  }
 
   const visibleNavItems = navItems.filter((item) => {
     // 1. Role must allow this tab
     const roleAllowed = item.roles.includes(currentUser.role);
     if (!roleAllowed) return false;
 
-    // 2. Tab MUST be explicitly permitted in userAllowedTabs
+    // 2. Super Admin always has full access to all permitted tabs for their role
+    if (isSuperAdmin) return true;
+
+    // 3. Tab MUST be explicitly permitted in userAllowedTabs
     return userAllowedTabs.includes(item.id);
   });
 

@@ -135,7 +135,7 @@ export default function WorkDetailsModal({ work, onClose, onDeleteTask, isManage
           <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
             <span className="text-slate-500 text-[10px] uppercase font-bold">Target Finishing Date</span>
             <div className="font-mono font-bold text-amber-300">{work.finishingDate || work.dueDate}</div>
-            <div className="text-[10px] text-slate-400">Allocated: {work.allocatedDate || 'Recent'}</div>
+            <div className="text-[10px] text-slate-400">Allocated: {work.allocationDate || work.allocatedDate || 'Recent'}</div>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">

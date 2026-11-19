@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CheckSquare,
   X,
@@ -118,6 +118,7 @@ export default function WorkAllocationModal({
       assignedToName: assignee.name,
       allocatedBy: `${currentUser?.name || 'Admin'} (${currentUser?.role || 'ADMIN'})`,
       allocatedDate: new Date().toISOString().split('T')[0],
+      allocationDate: new Date().toISOString().split('T')[0],
       finishingDate: formData.finishingDate,
       dueDate: formData.finishingDate,
       priority: formData.priority,
@@ -136,11 +137,16 @@ export default function WorkAllocationModal({
     onClose();
   };
 
+  useEffect(() => {
+    const el = document.getElementById('work-allocation-form-body');
+    if (el) el.scrollTop = 0;
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 md:p-8 space-y-5 shadow-2xl my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="p-5 md:p-6 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/95">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <CheckSquare className="w-6 h-6" />
@@ -163,7 +169,7 @@ export default function WorkAllocationModal({
         </div>
 
         {/* Allocation Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form id="work-allocation-form-body" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4 text-xs">
           {/* Job Number (Work Docket) */}
           <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -468,7 +474,7 @@ export default function WorkAllocationModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 flex items-center justify-between border-t border-slate-800">
+          <div className="pt-4 flex items-center justify-between border-t border-slate-800 shrink-0">
             <span className="text-[11px] text-slate-500">
               Allocated work will be restricted to assigned user's dashboard.
             </span>

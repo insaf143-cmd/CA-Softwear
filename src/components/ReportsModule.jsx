@@ -149,7 +149,7 @@ export default function ReportsModule({
   const activeStaffMember = users.find((u) => u.id === selectedStaffId) || users[0] || {};
   const staffTasksChronological = tasks
     .filter((t) => t.assignedTo === activeStaffMember.id || t.assignedToName === activeStaffMember.name)
-    .sort((a, b) => new Date(b.allocatedDate || 0) - new Date(a.allocatedDate || 0));
+    .sort((a, b) => new Date(b.allocationDate || b.allocatedDate || b.createdAt || 0) - new Date(a.allocationDate || a.allocatedDate || a.createdAt || 0));
 
   const staffCompleted = staffTasksChronological.filter((t) => t.status === 'Completed');
   const staffInProgress = staffTasksChronological.filter((t) => t.status === 'In Progress');
@@ -280,6 +280,7 @@ export default function ReportsModule({
       'Service Line',
       'Department',
       'Assigned Staff',
+      'Allocated Date',
       'Finishing Date',
       'Status',
       'Evidence Count',
@@ -308,6 +309,7 @@ export default function ReportsModule({
         `"${t.serviceLine || 'Audit & Assurance'}"`,
         `"${t.department}"`,
         `"${t.assignedToName || t.assignedTo}"`,
+        `"${t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}"`,
         `"${t.finishingDate || t.dueDate}"`,
         `"${t.status}"`,
         `"${evidenceCount} files"`,
@@ -596,6 +598,7 @@ export default function ReportsModule({
                     <th className="p-3.5">Client & ID</th>
                     <th className="p-3.5">Service Line & Dept</th>
                     <th className="p-3.5">Assigned Staff</th>
+                    <th className="p-3.5">Allocated Date</th>
                     <th className="p-3.5">Finishing Date</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5">Evidence Files</th>
@@ -654,6 +657,9 @@ export default function ReportsModule({
                           <div className="font-medium text-slate-200">{t.assignedToName || t.assignedTo}</div>
                           <div className="text-[10px] text-slate-500">Allocated by: {t.allocatedBy || 'Admin'}</div>
                         </td>
+                        <td className="p-3.5 font-mono text-[11px] text-slate-300">
+                          {t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}
+                        </td>
                         <td className="p-3.5">
                           <div className="font-mono font-bold text-amber-300">{t.finishingDate || t.dueDate}</div>
                           <div className="text-[10px] text-slate-500">{t.priority} Priority</div>
@@ -705,7 +711,7 @@ export default function ReportsModule({
                   })}
                   {filteredWorks.length === 0 && (
                     <tr>
-                      <td colSpan="8" className="p-8 text-center text-slate-500 text-xs">
+                      <td colSpan="9" className="p-8 text-center text-slate-500 text-xs">
                         No work records found matching the selected report filters.
                       </td>
                     </tr>
@@ -800,7 +806,7 @@ export default function ReportsModule({
                           </div>
                         </td>
                         <td className="p-3.5 font-mono text-[11px]">
-                          <div className="text-slate-400">Alloc: {t.allocatedDate || '2026-08-01'}</div>
+                          <div className="text-slate-400">Alloc: {t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}</div>
                           <div className="text-amber-300">Target: {t.finishingDate || t.dueDate}</div>
                         </td>
                         <td className="p-3.5 font-mono text-emerald-400 font-bold">
@@ -942,7 +948,7 @@ export default function ReportsModule({
                         <td className="p-3 font-semibold text-slate-100">{t.title}</td>
                         <td className="p-3 text-slate-300">{t.clientName}</td>
                         <td className="p-3 text-cyan-300 font-medium">{t.serviceLine || t.department}</td>
-                        <td className="p-3 font-mono text-slate-400">{t.allocatedDate || '-'}</td>
+                        <td className="p-3 font-mono text-slate-400">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || '-'}</td>
                         <td className="p-3 font-mono text-amber-300">{t.finishingDate || t.dueDate}</td>
                         <td className="p-3">
                           <span
@@ -1106,16 +1112,22 @@ export default function ReportsModule({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
                   <div className="text-slate-500 text-[10px] uppercase font-bold">Job / Docket Ref #</div>
                   <div className="font-mono font-black text-slate-900 text-sm">
                     {printableJobModal.jobNumber || printableJobModal.id}
                   </div>
                 </div>
+                <div className="text-center">
+                  <div className="text-slate-500 text-[10px] uppercase font-bold">Work Allocated Date</div>
+                  <div className="font-bold text-slate-900 font-mono">
+                    {printableJobModal.allocationDate || printableJobModal.allocatedDate || printableJobModal.createdAt?.split?.('T')?.[0] || 'N/A'}
+                  </div>
+                </div>
                 <div className="text-right">
                   <div className="text-slate-500 text-[10px] uppercase font-bold">Completion Date</div>
-                  <div className="font-bold text-slate-900">
+                  <div className="font-bold text-slate-900 font-mono">
                     {printableJobModal.approvalDetails?.approvedAt?.split('T')[0] || printableJobModal.finishingDate}
                   </div>
                 </div>
@@ -1218,6 +1230,7 @@ export default function ReportsModule({
                     <th className="p-2">Client Name</th>
                     <th className="p-2">Service Line</th>
                     <th className="p-2">Assigned Staff</th>
+                    <th className="p-2">Allocated Date</th>
                     <th className="p-2">Completion Date</th>
                     <th className="p-2">Approval Sign-off</th>
                   </tr>
@@ -1229,6 +1242,7 @@ export default function ReportsModule({
                       <td className="p-2 font-semibold">{t.clientName}</td>
                       <td className="p-2">{t.serviceLine || 'Audit'}</td>
                       <td className="p-2">{t.assignedToName || t.assignedTo}</td>
+                      <td className="p-2 font-mono">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || 'N/A'}</td>
                       <td className="p-2 font-mono">{t.approvalDetails?.approvedAt?.split('T')[0] || t.finishingDate}</td>
                       <td className="p-2 text-[10px] text-slate-600">{t.approvalDetails?.approvalRemarks || 'Approved'}</td>
                     </tr>
@@ -1306,6 +1320,7 @@ export default function ReportsModule({
                     <th className="p-2">Job #</th>
                     <th className="p-2">Client</th>
                     <th className="p-2">Assignment</th>
+                    <th className="p-2">Allocated Date</th>
                     <th className="p-2">Target Date</th>
                     <th className="p-2">Status</th>
                   </tr>
@@ -1316,6 +1331,7 @@ export default function ReportsModule({
                       <td className="p-2 font-mono font-bold">{t.jobNumber || t.id}</td>
                       <td className="p-2 font-medium">{t.clientName}</td>
                       <td className="p-2">{t.title}</td>
+                      <td className="p-2 font-mono">{t.allocationDate || t.allocatedDate || t.createdAt?.split?.('T')?.[0] || '-'}</td>
                       <td className="p-2 font-mono">{t.finishingDate}</td>
                       <td className="p-2 font-bold">{t.status}</td>
                     </tr>
