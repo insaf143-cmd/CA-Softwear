@@ -11,6 +11,7 @@ import {
   Edit2,
   X
 } from 'lucide-react';
+import { exportToExcel } from '../utils/exportUtils';
 
 export default function ROCAndAuditModule({ rocWork = [], setRocWork, clients = [] }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,6 +121,40 @@ export default function ROCAndAuditModule({ rocWork = [], setRocWork, clients = 
     setRocWork(updated);
   };
 
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) {
+      alert('No ROC / MCA filing records found to export.');
+      return;
+    }
+
+    const headers = [
+      'Company / Entity Name',
+      'Client ID',
+      'Form / Audit Name',
+      'Compliance Category',
+      'Statutory Due Date',
+      'Assigned Team',
+      'SRN / Acknowledgment',
+      'Filing Status',
+      'Compliance Notes'
+    ];
+
+    const rows = filteredData.map((item) => [
+      item.clientName || '',
+      item.clientId || '',
+      item.formName || '',
+      item.category || '',
+      item.dueDate || '',
+      item.assignedTo || '',
+      item.srn || '',
+      item.status || '',
+      item.notes || ''
+    ]);
+
+    const filename = `CA_ROC_Audit_Register_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(headers, rows, filename);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* Header */}
@@ -139,13 +174,24 @@ export default function ROCAndAuditModule({ rocWork = [], setRocWork, clients = 
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-950/40 transition hover:scale-[1.02]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add ROC / MCA Filing Entry</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-400 border border-purple-500/30 font-bold text-xs shadow-md transition"
+            title="Export ROC & Audit Register to Excel / CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-950/40 transition hover:scale-[1.02]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add ROC / MCA Filing Entry</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}

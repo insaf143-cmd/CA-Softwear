@@ -88,13 +88,13 @@ export const getDefaultTabsForRole = (role) => {
   if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
     return [
       'dashboard', 'tasks', 'reports', 'evidence', 'inwardOutward',
-      'clients', 'gst', 'it', 'roc', 'billing', 'calendar', 'users'
+      'clients', 'gst', 'it', 'roc', 'billing', 'calendar', 'users', 'hr'
     ];
   }
   if (role === 'MANAGER') {
     return [
       'dashboard', 'tasks', 'reports', 'evidence', 'inwardOutward',
-      'clients', 'gst', 'it', 'roc', 'billing', 'calendar'
+      'clients', 'gst', 'it', 'roc', 'billing', 'calendar', 'hr'
     ];
   }
   // NORMAL_USER (Staff)
@@ -215,7 +215,8 @@ export const clearAllDataAndStartFresh = async (onProgress) => {
       'roc',
       'billing',
       'calendar',
-      'users'
+      'users',
+      'hr'
     ]
   };
 

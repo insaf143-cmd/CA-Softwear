@@ -23,15 +23,21 @@ import {
   Trash2,
   CheckSquare2,
   Square,
-  ShieldAlert
+  ShieldAlert,
+  FileSpreadsheet,
+  Layers,
+  Download,
+  ChevronDown
 } from 'lucide-react';
 
 import WorkAllocationModal from './WorkAllocationModal';
+import BulkTaskAllocationModal from './BulkTaskAllocationModal';
 import WorkSubmitModal from './WorkSubmitModal';
 import WorkApprovalModal from './WorkApprovalModal';
 import WorkDetailsModal from './WorkDetailsModal';
 import { saveSingleTaskToFirebase, deleteSingleTaskFromFirebase } from '../services/firebaseService';
 import { isFirebaseConfigured } from '../config/firebase';
+import { exportToExcel } from '../utils/exportUtils';
 
 export default function TaskManager({
   tasks,
@@ -55,6 +61,8 @@ export default function TaskManager({
 
   // Modal States
   const [showAllocateModal, setShowAllocateModal] = useState(false);
+  const [showBulkAllocateModal, setShowBulkAllocateModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [submittingWork, setSubmittingWork] = useState(null);
   const [reviewingWork, setReviewingWork] = useState(null);
   const [inspectingWork, setInspectingWork] = useState(null);
@@ -64,6 +72,86 @@ export default function TaskManager({
     currentUser.role === 'SUPER_ADMIN' ||
     currentUser.role === 'ADMIN' ||
     currentUser.role === 'MANAGER';
+
+  // Bulk Task Allocation Handler
+  const handleBulkAllocate = (createdTasks = []) => {
+    if (!createdTasks || createdTasks.length === 0) return;
+    setTasks((prev) => [...createdTasks, ...prev]);
+    createdTasks.forEach((t) => {
+      saveSingleTaskToFirebase(t);
+    });
+    alert(`✓ Successfully scheduled and allocated ${createdTasks.length} tasks!\nAll assignments have been saved locally and synchronized to Google Firebase.`);
+  };
+
+  // Excel / CSV Export for Work Allocation Tab
+  const handleExportTasks = (mode = 'filtered') => {
+    setShowExportMenu(false);
+    let tasksToExport = filteredTasks;
+
+    if (mode === 'pending') {
+      tasksToExport = tasks.filter((t) => t.status === 'Allocated' || t.status === 'In Progress');
+    } else if (mode === 'submitted') {
+      tasksToExport = tasks.filter((t) => t.status === 'Submitted for Approval' || t.status === 'Review');
+    } else if (mode === 'completed') {
+      tasksToExport = tasks.filter((t) => t.status === 'Completed');
+    } else if (mode === 'all') {
+      tasksToExport = tasks;
+    }
+
+    if (tasksToExport.length === 0) {
+      alert('No tasks found to export for the selected category.');
+      return;
+    }
+
+    const headers = [
+      'Job Number',
+      'Task Title',
+      'Client Name',
+      'Client ID',
+      'PAN',
+      'GSTIN',
+      'Department',
+      'Service Line',
+      'Assigned Staff',
+      'Allocation Date',
+      'Due Date',
+      'Priority',
+      'Current Status',
+      'Statutory Section',
+      'Period / FY',
+      'Est Hours',
+      'Fee Quote',
+      'Turnover (₹)',
+      'Net Liability / Tax (₹)',
+      'Filing Ref / ARN'
+    ];
+
+    const rows = tasksToExport.map((t) => [
+      t.jobNumber || t.id,
+      t.title || '',
+      t.clientName || '',
+      t.clientId || '',
+      t.clientPan || '',
+      t.clientGstin || '',
+      t.department || '',
+      t.serviceLine || '',
+      t.assignedToName || t.assignedTo || 'Unassigned',
+      t.allocationDate || '',
+      t.dueDate || t.finishingDate || '',
+      t.priority || 'Normal',
+      t.status || 'Allocated',
+      t.statutorySection || '',
+      t.schedulePeriod || t.fy || '',
+      t.estimatedHours || '',
+      t.feeQuote || '',
+      t.complianceData?.turnover ?? '',
+      t.complianceData?.netLiability ?? t.complianceData?.taxDue ?? '',
+      t.complianceData?.arn ?? t.complianceData?.ackNo ?? ''
+    ]);
+
+    const filename = `CA_Work_Allocation_${mode}_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(headers, rows, filename);
+  };
 
   // Task Deletion Handler (Admin & Manager Only with Auto-Update to Firebase)
   const handleDeleteTask = async (taskId, taskTitle) => {
@@ -423,16 +511,94 @@ export default function TaskManager({
           </p>
         </div>
 
-        {/* Allocate Button for Admin / Manager */}
-        {isManagerOrAdmin && (
-          <button
-            onClick={() => setShowAllocateModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 transition shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Allocate New Work</span>
-          </button>
-        )}
+        {/* Action Controls for Admin, Manager & Staff */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Excel Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold text-xs shadow-md transition"
+              title="Export Work Allocation to Excel / CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Export Excel</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-850 border border-slate-700 shadow-2xl py-1.5 z-40 animate-fade-in text-xs bg-slate-900">
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  Select Export Scope:
+                </div>
+                <button
+                  onClick={() => handleExportTasks('filtered')}
+                  className="w-full text-left px-3 py-2 text-slate-200 hover:bg-emerald-500/15 hover:text-emerald-300 flex items-center justify-between"
+                >
+                  <span>Current Filtered View</span>
+                  <span className="text-[10px] text-slate-400">({filteredTasks.length})</span>
+                </button>
+                <button
+                  onClick={() => handleExportTasks('pending')}
+                  className="w-full text-left px-3 py-2 text-slate-200 hover:bg-emerald-500/15 hover:text-emerald-300 flex items-center justify-between"
+                >
+                  <span>Pending & In Progress</span>
+                  <span className="text-[10px] text-amber-400 font-bold">
+                    ({tasks.filter((t) => t.status === 'Allocated' || t.status === 'In Progress').length})
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleExportTasks('submitted')}
+                  className="w-full text-left px-3 py-2 text-slate-200 hover:bg-emerald-500/15 hover:text-emerald-300 flex items-center justify-between"
+                >
+                  <span>Submitted for Approval</span>
+                  <span className="text-[10px] text-purple-400 font-bold">
+                    ({tasks.filter((t) => t.status === 'Submitted for Approval' || t.status === 'Review').length})
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleExportTasks('completed')}
+                  className="w-full text-left px-3 py-2 text-slate-200 hover:bg-emerald-500/15 hover:text-emerald-300 flex items-center justify-between"
+                >
+                  <span>Completed & Filed Tasks</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">
+                    ({tasks.filter((t) => t.status === 'Completed').length})
+                  </span>
+                </button>
+                <div className="my-1 border-t border-slate-800" />
+                <button
+                  onClick={() => handleExportTasks('all')}
+                  className="w-full text-left px-3 py-2 font-bold text-white hover:bg-emerald-600 hover:text-white flex items-center justify-between"
+                >
+                  <span>Export All Master Tasks</span>
+                  <span className="text-[10px] font-mono">({tasks.length})</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Bulk Allocation Button for Admin / Manager */}
+          {isManagerOrAdmin && (
+            <button
+              onClick={() => setShowBulkAllocateModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-teal-950/50 transition shrink-0"
+              title="Bulk task allocation for 1 month audit schedules, GST batches, ITR"
+            >
+              <Layers className="w-4 h-4 text-cyan-200" />
+              <span>Bulk Allocation</span>
+            </button>
+          )}
+
+          {/* Allocate Single Work Button */}
+          {isManagerOrAdmin && (
+            <button
+              onClick={() => setShowAllocateModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 transition shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Allocate New Work</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Prominent Manager Review Queue Alert Banner (Visible to Manager & Admin) */}
@@ -1079,6 +1245,16 @@ export default function TaskManager({
         <WorkAllocationModal
           onClose={() => setShowAllocateModal(false)}
           onAllocateWork={handleAllocateWork}
+          clients={clients}
+          staff={staff}
+          currentUser={currentUser}
+        />
+      )}
+
+      {showBulkAllocateModal && (
+        <BulkTaskAllocationModal
+          onClose={() => setShowBulkAllocateModal(false)}
+          onBulkAllocate={handleBulkAllocate}
           clients={clients}
           staff={staff}
           currentUser={currentUser}

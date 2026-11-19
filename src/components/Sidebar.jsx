@@ -14,7 +14,8 @@ import {
   Trash2,
   BarChart3,
   FolderArchive,
-  FolderInput
+  FolderInput,
+  Users2
 } from 'lucide-react';
 import { getDefaultTabsForRole } from '../utils/storage';
 
@@ -122,6 +123,14 @@ export default function Sidebar({ activeTab, setActiveTab, counts, currentUser, 
       icon: UserCheck,
       badge: counts.usersCount ? `${counts.usersCount}` : null,
       roles: ['SUPER_ADMIN', 'ADMIN']
+    },
+    {
+      id: 'hr',
+      label: 'HR & Staff Suite',
+      icon: Users2,
+      badge: counts.usersCount ? `${counts.usersCount} Staff` : null,
+      badgeColor: 'bg-emerald-500/20 text-emerald-300',
+      roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
     },
     {
       id: 'removal',

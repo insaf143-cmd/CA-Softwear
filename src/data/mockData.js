@@ -22,7 +22,8 @@ export const MASTER_ADMIN = {
     'roc',
     'billing',
     'calendar',
-    'users'
+    'users',
+    'hr'
   ]
 };
 

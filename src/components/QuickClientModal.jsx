@@ -1,31 +1,34 @@
 import React, { useState } from 'react';
-import { UserPlus, X, ShieldCheck, Key, Building2 } from 'lucide-react';
+import { UserPlus, X, ShieldCheck, Key, Building2, Edit3, EyeOff } from 'lucide-react';
 
-export default function QuickClientModal({ onClose, onAddClient, staff }) {
+export default function QuickClientModal({ onClose, onAddClient, staff, initialClient = null }) {
+  const isEdit = Boolean(initialClient);
+
   const [form, setForm] = useState({
-    clientId: `CL-${Math.floor(1001 + Math.random() * 8999)}`,
-    name: '',
-    tradeName: '',
-    constitution: 'Private Limited Company',
-    pan: '',
-    gstin: '',
-    tan: '',
-    email: '',
-    phone: '',
-    authorizedPerson: '',
-    address: '',
-    category: 'Corporate',
-    turnover: '₹1.0 Cr',
-    assignedStaff: staff[0]?.id || 'S1',
-    gstUser: '',
-    gstPass: '',
-    itUser: '',
-    itPass: ''
+    clientId: initialClient?.id || `CL-${Math.floor(1001 + Math.random() * 8999)}`,
+    name: initialClient?.name || '',
+    tradeName: initialClient?.tradeName || '',
+    constitution: initialClient?.constitution || 'Private Limited Company',
+    pan: initialClient?.pan || '',
+    gstin: initialClient?.gstin || '',
+    tan: initialClient?.tan || '',
+    email: initialClient?.email || '',
+    phone: initialClient?.phone || '',
+    authorizedPerson: initialClient?.authorizedPerson || '',
+    address: initialClient?.address || '',
+    category: initialClient?.category || 'Corporate',
+    turnover: initialClient?.turnover || '₹1.0 Cr',
+    assignedStaff: initialClient?.assignedStaff || staff[0]?.id || 'ADMIN01',
+    status: initialClient?.status || 'Active',
+    gstUser: initialClient?.portalCredentials?.gstUser || '',
+    gstPass: initialClient?.portalCredentials?.gstPass || '',
+    itUser: initialClient?.portalCredentials?.itUser || '',
+    itPass: initialClient?.portalCredentials?.itPass || ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const cleanId = (form.clientId || '').trim().toUpperCase() || `CL-${Math.floor(1001 + Math.random() * 8999)}`;
+    const cleanId = (form.clientId || '').trim().toUpperCase() || (initialClient?.id || `CL-${Math.floor(1001 + Math.random() * 8999)}`);
     const cleanName = (form.name || '').trim();
     if (!cleanName) {
       alert('Please enter Client / Legal Entity Name.');
@@ -36,7 +39,8 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
     const cleanGstin = (form.gstin || '').trim().toUpperCase();
     const cleanTan = (form.tan || '').trim().toUpperCase();
 
-    const newClient = {
+    const savedClient = {
+      ...(initialClient || {}),
       id: cleanId,
       name: cleanName,
       tradeName: (form.tradeName || '').trim() || cleanName,
@@ -44,7 +48,7 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
       pan: cleanPan,
       gstin: cleanGstin || 'N/A',
       tan: cleanTan || 'N/A',
-      cin: 'Pending Registration',
+      cin: initialClient?.cin || 'Pending Registration',
       email: form.email || '',
       phone: form.phone || '',
       authorizedPerson: form.authorizedPerson || cleanName,
@@ -52,17 +56,19 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
       assignedStaff: form.assignedStaff || staff[0]?.id || 'ADMIN01',
       category: form.category || 'Corporate',
       turnover: form.turnover || '₹1.0 Cr',
-      bankDetails: { bank: 'HDFC Bank', acNo: '001299881122', ifsc: 'HDFC0000240', branch: 'Main Branch' },
+      status: form.status || 'Active',
+      bankDetails: initialClient?.bankDetails || { bank: 'HDFC Bank', acNo: '001299881122', ifsc: 'HDFC0000240', branch: 'Main Branch' },
       portalCredentials: {
+        ...(initialClient?.portalCredentials || {}),
         gstUser: form.gstUser || `${cleanPan}_GST`,
         gstPass: form.gstPass || 'GstPass#2026',
-        itUser: cleanPan,
+        itUser: form.itUser || cleanPan,
         itPass: form.itPass || 'ItPass#2026'
       },
-      directors: []
+      directors: initialClient?.directors || []
     };
 
-    onAddClient(newClient);
+    onAddClient(savedClient);
     onClose();
   };
 
@@ -71,8 +77,8 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-emerald-400" />
-            Register New CA Firm Client
+            {isEdit ? <Edit3 className="w-5 h-5 text-amber-400" /> : <UserPlus className="w-5 h-5 text-emerald-400" />}
+            {isEdit ? `Edit Client Master File (${form.clientId})` : 'Register New CA Firm Client'}
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -80,7 +86,7 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Client ID (Unique Code) */}
+          {/* Client ID and Status Section */}
           <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <label className="block text-slate-300 font-semibold mb-0.5">
@@ -94,25 +100,52 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
               <input
                 type="text"
                 required
+                disabled={isEdit}
                 value={form.clientId}
                 onChange={(e) => setForm({ ...form, clientId: e.target.value.toUpperCase() })}
                 placeholder="e.g. CL-1001"
-                className="w-36 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500 uppercase text-xs"
+                className={`w-36 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-mono font-bold focus:outline-none uppercase text-xs ${
+                  isEdit ? 'opacity-70 cursor-not-allowed' : 'focus:border-emerald-500'
+                }`}
               />
-              <button
-                type="button"
-                onClick={() =>
-                  setForm({
-                    ...form,
-                    clientId: `CL-${Math.floor(1001 + Math.random() * 8999)}`
-                  })
-                }
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold border border-slate-700 shrink-0"
-                title="Generate another sequential Client ID"
-              >
-                Auto Generate
-              </button>
+              {!isEdit && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      clientId: `CL-${Math.floor(1001 + Math.random() * 8999)}`
+                    })
+                  }
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold border border-slate-700 shrink-0"
+                  title="Generate another sequential Client ID"
+                >
+                  Auto Generate
+                </button>
+              )}
             </div>
+          </div>
+
+          {/* Client Status (Active vs Resigned/Hidden) */}
+          <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <label className="text-slate-200 font-bold block">Client Engagement Status</label>
+              <p className="text-[11px] text-slate-400">
+                Marking a client as Resigned hides them from active daily views while preserving all historical records.
+              </p>
+            </div>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className={`px-3 py-1.5 rounded-xl border font-bold text-xs focus:outline-none ${
+                form.status === 'Active'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              }`}
+            >
+              <option value="Active" className="bg-slate-900 text-emerald-300">Active Client (In Service)</option>
+              <option value="Resigned" className="bg-slate-900 text-amber-300">Resigned / Discontinued (Hidden)</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -268,9 +301,9 @@ export default function QuickClientModal({ onClose, onAddClient, staff }) {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold shadow-lg"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold shadow-lg transition"
             >
-              Save Client Profile
+              {isEdit ? 'Update Client File' : 'Save Client Profile'}
             </button>
           </div>
         </form>

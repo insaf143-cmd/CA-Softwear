@@ -11,8 +11,10 @@ import {
   Plus,
   Trash2,
   Edit2,
-  X
+  X,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportToExcel } from '../utils/exportUtils';
 
 export default function ITModule({ itWork = [], setItWork, onOpenTaxCalc, clients = [] }) {
   const [ayFilter, setAyFilter] = useState('AY 2026-27');
@@ -143,6 +145,48 @@ export default function ITModule({ itWork = [], setItWork, onOpenTaxCalc, client
     setItWork(updated);
   };
 
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) {
+      alert('No Income Tax records found to export.');
+      return;
+    }
+
+    const headers = [
+      'Client Name',
+      'Client ID',
+      'PAN',
+      'ITR Form Type',
+      'Assessment Year',
+      'Due Date',
+      'Taxable Income (₹)',
+      'Tax Due / Refund (₹)',
+      'Ack / ITR-V Number',
+      'Assigned Staff',
+      'Tax Audit Required',
+      'Filing Status',
+      'Linked Task'
+    ];
+
+    const rows = filteredData.map((item) => [
+      item.clientName || '',
+      item.clientId || '',
+      item.pan || '',
+      item.formType || '',
+      item.ay || '',
+      item.dueDate || '',
+      item.taxableIncome ?? 0,
+      item.taxDue ?? 0,
+      item.ackNo || '',
+      item.assignedTo || '',
+      item.taxAuditRequired ? 'Yes' : 'No',
+      item.status || '',
+      item.taskId || ''
+    ]);
+
+    const filename = `CA_IncomeTax_Register_${(ayFilter || 'All').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(headers, rows, filename);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* Module Header */}
@@ -163,6 +207,15 @@ export default function ITModule({ itWork = [], setItWork, onOpenTaxCalc, client
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-500/30 font-bold text-xs shadow-md transition"
+            title="Export Income Tax Register to Excel / CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-blue-400" />
+            <span>Export Excel</span>
+          </button>
+
           <button
             onClick={onOpenTaxCalc}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition"

@@ -22,6 +22,7 @@ import LoginScreen from './components/LoginScreen';
 import FirmSettingsModal from './components/FirmSettingsModal';
 import EvidenceVault from './components/EvidenceVault';
 import InwardOutwardRegister from './components/InwardOutwardRegister';
+import HRModule from './components/HRModule';
 
 import {
   getClients, saveClients,
@@ -78,7 +79,8 @@ export const TAB_ROLE_PERMISSIONS = {
   billing: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
   calendar: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'],
   users: ['SUPER_ADMIN', 'ADMIN'],
-  removal: ['SUPER_ADMIN', 'ADMIN']
+  removal: ['SUPER_ADMIN', 'ADMIN'],
+  hr: ['SUPER_ADMIN', 'ADMIN', 'MANAGER']
 };
 
 export const isTabAuthorized = (tabId, user) => {
@@ -182,6 +184,7 @@ export default function App() {
   const [selectedClientDetail, setSelectedClientDetail] = useState(null);
   const [showTaxCalcModal, setShowTaxCalcModal] = useState(false);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
   const [showGitHubModal, setShowGitHubModal] = useState(false);
   const [showFirmSettingsModal, setShowFirmSettingsModal] = useState(false);
@@ -615,6 +618,20 @@ export default function App() {
     });
   };
 
+  const handleToggleHideClient = (clientId) => {
+    setClients((prev) =>
+      prev.map((c) => {
+        if (c.id === clientId) {
+          const nextStatus = c.status === 'Resigned' ? 'Active' : 'Resigned';
+          const updated = { ...c, status: nextStatus };
+          saveSingleClientToFirebase(updated);
+          return updated;
+        }
+        return c;
+      })
+    );
+  };
+
   const handleRemoveClient = (clientId, reason) => {
     const target = clients.find(c => c.id === clientId);
     if (!target) return;
@@ -691,7 +708,8 @@ export default function App() {
     { id: 'roc', label: 'ROC', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
     { id: 'billing', label: 'Billing', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
     { id: 'calendar', label: 'Calendar', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'NORMAL_USER'] },
-    { id: 'users', label: 'Staff', roles: ['SUPER_ADMIN', 'ADMIN'] }
+    { id: 'users', label: 'Staff', roles: ['SUPER_ADMIN', 'ADMIN'] },
+    { id: 'hr', label: 'HR', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] }
   ].filter((t) => {
     if (!t.roles.includes(currentUser.role)) return false;
     const userTabs =
@@ -861,7 +879,15 @@ export default function App() {
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
                   onOpenClientDetail={(client) => setSelectedClientDetail(client)}
-                  onOpenNewClient={() => setShowNewClientModal(true)}
+                  onOpenNewClient={() => {
+                    setEditingClient(null);
+                    setShowNewClientModal(true);
+                  }}
+                  onOpenEditClient={(client) => {
+                    setEditingClient(client);
+                    setShowNewClientModal(true);
+                  }}
+                  onToggleHideClient={handleToggleHideClient}
                   onDeleteClient={handleRemoveClient}
                   currentUser={currentUser}
                 />
@@ -916,6 +942,17 @@ export default function App() {
                 />
               )}
 
+              {activeTab === 'hr' && (
+                <HRModule
+                  users={users}
+                  setUsers={setUsers}
+                  tasks={tasks}
+                  clients={clients}
+                  currentUser={currentUser}
+                  firmProfile={firmProfile}
+                />
+              )}
+
               {activeTab === 'removal' && (
                 <ClientRemovalTab
                   removedClients={removedClients}
@@ -934,6 +971,11 @@ export default function App() {
         <ClientDetailModal
           client={selectedClientDetail}
           onClose={() => setSelectedClientDetail(null)}
+          onEditClient={(client) => {
+            setSelectedClientDetail(null);
+            setEditingClient(client);
+            setShowNewClientModal(true);
+          }}
         />
       )}
 
@@ -945,9 +987,13 @@ export default function App() {
 
       {showNewClientModal && (
         <QuickClientModal
-          onClose={() => setShowNewClientModal(false)}
+          onClose={() => {
+            setShowNewClientModal(false);
+            setEditingClient(null);
+          }}
           onAddClient={handleAddClient}
           staff={users}
+          initialClient={editingClient}
         />
       )}
 

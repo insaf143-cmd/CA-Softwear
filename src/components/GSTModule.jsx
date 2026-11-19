@@ -17,6 +17,7 @@ import {
   Receipt,
   FileSpreadsheet
 } from 'lucide-react';
+import { exportToExcel } from '../utils/exportUtils';
 
 export default function GSTModule({ gstWork = [], setGstWork, clients = [], firmProfile }) {
   const [filterStatus, setFilterStatus] = useState('All');
@@ -164,6 +165,48 @@ export default function GSTModule({ gstWork = [], setGstWork, clients = [], firm
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) {
+      alert('No GST records found to export.');
+      return;
+    }
+
+    const headers = [
+      'Client Name',
+      'Client ID',
+      'GSTIN',
+      'Return Form',
+      'Period / Month',
+      'Due Date',
+      'Turnover (₹)',
+      'Sales Tax (₹)',
+      'ITC Claimed (₹)',
+      'Net Tax Liability (₹)',
+      'Filing Status',
+      'ARN Number',
+      'Linked Task'
+    ];
+
+    const rows = filteredData.map((item) => [
+      item.clientName || '',
+      item.clientId || '',
+      item.gstin || '',
+      item.type || '',
+      item.period || '',
+      item.dueDate || '',
+      item.turnover ?? 0,
+      item.salesTax ?? 0,
+      item.itcAvailable ?? 0,
+      item.netLiability ?? 0,
+      item.status || '',
+      item.arn || '',
+      item.taskId || ''
+    ]);
+
+    const filename = `CA_GST_Compliance_Register_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(headers, rows, filename);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* Module Title */}
@@ -184,9 +227,14 @@ export default function GSTModule({ gstWork = [], setGstWork, clients = [], firm
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
-            {gstWork.filter(g => g.status === 'Filed').length} / {gstWork.length} Returns Filed
-          </div>
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold text-xs shadow-md transition"
+            title="Export GST Register to Excel / CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
 
           <button
             onClick={handleOpenAdd}

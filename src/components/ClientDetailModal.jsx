@@ -14,10 +14,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  Briefcase
+  Briefcase,
+  Edit3
 } from 'lucide-react';
 
-export default function ClientDetailModal({ client, onClose }) {
+export default function ClientDetailModal({ client, onClose, onEditClient }) {
   const [showPass, setShowPass] = useState({});
   const [copiedKey, setCopiedKey] = useState(null);
 
@@ -48,6 +49,11 @@ export default function ClientDetailModal({ client, onClose }) {
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
                   {client.constitution}
                 </span>
+                {client.status === 'Resigned' && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                    Resigned
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
                 <span>Category: <strong>{client.category}</strong></span> • 
@@ -56,12 +62,27 @@ export default function ClientDetailModal({ client, onClose }) {
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEditClient && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditClient(client);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold transition"
+                title="Edit Client Master File & Credentials"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Client</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}

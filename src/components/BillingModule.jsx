@@ -15,8 +15,10 @@ import {
   Calendar,
   Filter,
   ArrowRight,
-  History
+  History,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportToExcel } from '../utils/exportUtils';
 
 export default function BillingModule({ invoices, setInvoices, clients = [], firmProfile }) {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -188,6 +190,50 @@ export default function BillingModule({ invoices, setInvoices, clients = [], fir
     setRecordingPaymentInvoice(null);
   };
 
+  const handleExportInvoices = () => {
+    if (computedInvoices.length === 0) {
+      alert('No invoice records found to export.');
+      return;
+    }
+
+    const headers = [
+      'Invoice Number',
+      'Client Name',
+      'Client ID',
+      'Invoice Date',
+      'Due Date',
+      'Service Description',
+      'SAC Code',
+      'Net Fee (₹)',
+      'GST Amount (₹)',
+      'Total Amount (₹)',
+      'Amount Paid (₹)',
+      'Balance Due (₹)',
+      'Payment Status',
+      'Payment Mode'
+    ];
+
+    const rows = computedInvoices.map((inv) => [
+      inv.invoiceNumber || inv.id,
+      inv.clientName || '',
+      inv.clientId || '',
+      inv.date || '',
+      inv.dueDate || '',
+      inv.serviceDescription || inv.particulars || '',
+      inv.sacCode || '998222',
+      inv.subtotal ?? 0,
+      inv.taxAmount ?? 0,
+      inv.totalAmount ?? 0,
+      inv.paidAmount ?? 0,
+      inv.balanceAmount ?? 0,
+      inv.status || 'Pending',
+      inv.paymentMode || 'N/A'
+    ]);
+
+    const filename = `CA_Billing_Ledger_${statusFilter}_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(headers, rows, filename);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Bar */}
@@ -202,13 +248,24 @@ export default function BillingModule({ invoices, setInvoices, clients = [], fir
           </p>
         </div>
 
-        <button
-          onClick={() => setShowInvoiceModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition shrink-0"
-        >
-          <Plus className="w-4 h-4 text-slate-950" />
-          <span>Raise Fee Invoice</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleExportInvoices}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#0a1128] hover:bg-slate-800 text-amber-400 border border-amber-500/30 font-bold text-xs shadow-md transition"
+            title="Export Invoices to Excel / CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition shrink-0"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Raise Fee Invoice</span>
+          </button>
+        </div>
       </div>
 
       {/* Financial Summary Cards */}

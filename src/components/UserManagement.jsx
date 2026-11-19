@@ -40,7 +40,8 @@ export const AVAILABLE_MODULE_TABS = [
   { id: 'roc', label: 'ROC & Statutory Audit', desc: 'MCA compliance, AOC-4, MGT-7, Form 3CD' },
   { id: 'billing', label: 'Billing & Fee Ledger', desc: 'Raise bills, track payments, partial payments' },
   { id: 'calendar', label: 'Compliance Calendar', desc: 'Statutory due dates calendar' },
-  { id: 'users', label: 'Staff & Role Control', desc: 'Manage user credentials and tab access permissions' }
+  { id: 'users', label: 'Staff & Role Control', desc: 'Manage user credentials and tab access permissions' },
+  { id: 'hr', label: 'HR & Staff Suite', desc: 'Employee records, DOJ, qualifications, stipend and HR reports' }
 ];
 
 export { getDefaultTabsForRole };
